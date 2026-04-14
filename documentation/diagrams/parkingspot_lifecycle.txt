@@ -1,0 +1,10 @@
+@startuml
+
+[*] --> Free
+
+Free --> Reserved : Zuweisung
+Reserved --> Occupied : Fahrzeug parkt
+
+Occupied --> Free : Ausfahrt
+
+@enduml

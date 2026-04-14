@@ -1,0 +1,45 @@
+@startuml
+start
+
+:Ankunft Fahrzeug;
+
+if (Dauermieter?) then (Ja)
+  :Code eingeben;
+  if (Code gültig und bezahlt?) then (Ja)
+    :Einfahrt erlauben;
+  else (Nein)
+    :Zutritt verweigern;
+    stop
+  endif
+else (Nein)
+  :Ticket ziehen;
+  if (Freier Parkplatz?) then (Ja)
+    :Ticket erstellen;
+    :Einfahrt erlauben;
+  else (Nein)
+    :Zutritt verweigern;
+    stop
+  endif
+endif
+
+:Parkieren;
+
+:Zum Automaten gehen;
+:Ticket eingeben;
+
+:Parkdauer berechnen;
+:Betrag berechnen;
+
+:Bezahlen;
+
+if (Zahlung erfolgreich?) then (Ja)
+  :Austrittsticket erstellen;
+  :Zur Ausfahrt fahren;
+  :Ticket scannen;
+  :Ausfahrt erlauben;
+else (Nein)
+  :Zahlung wiederholen;
+endif
+
+stop
+@enduml

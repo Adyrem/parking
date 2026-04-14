@@ -1,0 +1,16 @@
+@startuml
+actor Nutzer
+participant "Parkhaus-System" as System
+participant "Schranke" as Gate
+
+Nutzer -> System : Ticket scannen
+System -> System : Ticket prüfen
+
+alt gültig
+  System -> Gate : Öffnen
+  Gate -> Nutzer : Ausfahrt
+else ungültig
+  System -> Nutzer : Ausfahrt verweigert
+end
+
+@enduml

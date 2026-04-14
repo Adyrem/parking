@@ -1,0 +1,115 @@
+@startuml
+
+skinparam classAttributeIconSize 0
+
+' ===== Core System =====
+class ParkingSystem {
+  +createTicket() : Ticket
+  +assignParkingSpot() : ParkingSpot
+  +calculateFee(ticket: Ticket) : Money
+  +processPayment(ticket: Ticket) : boolean
+  +validateAccess(code: String) : boolean
+  +registerEntry(ticket: Ticket)
+  +registerExit(ticket: Ticket)
+}
+
+' ===== Entities =====
+class ParkingGarage {
+  -name : String
+  -levels : List<Level>
+  +getAvailableSpots() : List<ParkingSpot>
+}
+
+class Level {
+  -number : int
+  -spots : List<ParkingSpot>
+}
+
+class ParkingSpot {
+  -id : String
+  -isOccupied : boolean
+  +assign()
+  +free()
+}
+
+class Ticket {
+  -id : String
+  -entryTime : DateTime
+  -exitTime : DateTime
+  -paid : boolean
+  +markPaid()
+}
+
+class User {
+  -id : String
+}
+
+class OccasionalUser
+class PermanentUser {
+  -accessCode : String
+  -isBlocked : boolean
+  +validateCode(code: String) : boolean
+}
+
+User <|-- OccasionalUser
+User <|-- PermanentUser
+
+' ===== Payment =====
+class PaymentService {
+  +process(amount: Money) : boolean
+}
+
+class AccountingService {
+  +recordTransaction(amount: Money)
+}
+
+' ===== Pricing =====
+class PricingStrategy {
+  +calculate(ticket: Ticket) : Money
+}
+
+class TimeBasedPricing
+class FlatRatePricing
+
+PricingStrategy <|-- TimeBasedPricing
+PricingStrategy <|-- FlatRatePricing
+
+' ===== Statistics =====
+class StatisticsService {
+  +generateUsageStats()
+  +calculateMonthlyRevenue()
+  +calculateYearlyRevenue()
+}
+
+' ===== Relationships =====
+ParkingSystem --> ParkingGarage
+ParkingGarage --> Level
+Level --> ParkingSpot
+
+ParkingSystem --> Ticket
+ParkingSystem --> PaymentService
+ParkingSystem --> AccountingService
+ParkingSystem --> StatisticsService
+
+ParkingSystem --> PricingStrategy
+
+PermanentUser --> ParkingSpot : assigned >
+
+' ===== Notes / Patterns =====
+note right of PricingStrategy
+Strategy Pattern:
+Allows flexible pricing models
+(e.g. time-based, flat rate)
+end note
+
+note right of ParkingSystem
+Facade Pattern:
+Central entry point for system logic
+end note
+
+note bottom of ParkingSpot
+Simple allocation algorithm:
+first available spot
+end note
+
+@enduml

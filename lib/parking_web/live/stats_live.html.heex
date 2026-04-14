@@ -1,0 +1,417 @@
+<Layouts.app flash={@flash}>
+  <div class="space-y-8 p-6" id="stats-page" phx-hook=".StatsHook">
+    <%!-- Navigation --%>
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-100">Parkstatistiken - {@garage.name}</h1>
+        <p class="text-sm text-gray-400">Auslastung und Umsatzübersicht</p>
+      </div>
+      <div class="flex gap-3 items-center">
+        <%!-- Garage Selector --%>
+        <.form for={to_form(%{})} id="garage-selector-form" phx-change="select_garage">
+          <.input
+            type="select"
+            id="garage-id-select"
+            name="garage_id"
+            value={@garage_id}
+            options={Enum.map(@garages, &{&1.name, &1.id})}
+            class="bg-gray-700 border border-gray-600 text-gray-100 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </.form>
+        <.link
+          navigate={~p"/garage/#{@garage_id}"}
+          class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition font-semibold"
+        >
+          ← Zurück zum Parkhaus
+        </.link>
+      </div>
+    </div>
+
+    <%!-- Overall Statistics --%>
+    <%= if @stats do %>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <%!-- Total Spots --%>
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <p class="text-gray-400 text-sm font-semibold uppercase">Plätze gesamt</p>
+          <p class="text-3xl font-bold text-gray-100 mt-2">{@stats.total_spots}</p>
+        </div>
+
+        <%!-- Occupied Spots --%>
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <p class="text-gray-400 text-sm font-semibold uppercase">Belegt</p>
+          <p class="text-3xl font-bold text-red-400 mt-2">{@stats.occupied_spots}</p>
+        </div>
+
+        <%!-- Available Spots --%>
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <p class="text-gray-400 text-sm font-semibold uppercase">Verfügbar</p>
+          <p class="text-3xl font-bold text-green-400 mt-2">{@stats.available_spots}</p>
+        </div>
+
+        <%!-- Occupancy Rate --%>
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <p class="text-gray-400 text-sm font-semibold uppercase">Auslastung</p>
+          <div class="flex items-baseline mt-2">
+            <p class={[
+              "text-3xl font-bold",
+              cond do
+                @stats.occupancy_rate >= 95 -> "text-red-400"
+                @stats.occupancy_rate >= 80 -> "text-yellow-400"
+                true -> "text-green-400"
+              end
+            ]}>
+              {@stats.occupancy_rate}
+            </p>
+            <p class="text-gray-400 ml-1">%</p>
+          </div>
+        </div>
+      </div>
+      <%!-- Revenue Statistics --%>
+      <%= if @monthly_revenue do %>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <%!-- Monthly Revenue --%>
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <p class="text-gray-400 text-sm font-semibold uppercase">Monatlicher Umsatz</p>
+            <p class="text-3xl font-bold text-green-400 mt-2">
+              CHF {format_chf(@monthly_revenue.total)}
+            </p>
+            <div class="text-sm text-gray-400 mt-1">
+              Gast: CHF {format_chf(@monthly_revenue.guest)} | Dauerparkplatz: CHF {format_chf(
+                @monthly_revenue.permanent
+              )}
+            </div>
+          </div>
+
+          <%!-- Yearly Revenue --%>
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <p class="text-gray-400 text-sm font-semibold uppercase">Jährlicher Umsatz</p>
+            <p class="text-3xl font-bold text-green-400 mt-2">
+              CHF {format_chf(@yearly_revenue.total)}
+            </p>
+            <div class="text-sm text-gray-400 mt-1">
+              Gast: CHF {format_chf(@yearly_revenue.guest)} | Dauerparkplatz: CHF {format_chf(
+                @yearly_revenue.permanent
+              )}
+            </div>
+          </div>
+
+          <%!-- Revenue Breakdown --%>
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <p class="text-gray-400 text-sm font-semibold uppercase">Umsatzaufschlüsselung</p>
+            <div class="mt-2 space-y-2">
+              <div class="flex justify-between">
+                <span class="text-gray-300">Gastparken</span>
+                <span class="text-green-400">CHF {format_chf(@monthly_revenue.guest)}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-300">Dauermiete</span>
+                <span class="text-green-400">CHF {format_chf(@monthly_revenue.permanent)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+      <%!-- Occupancy Progress Bar --%>
+      <div class={[
+        "rounded-lg p-6 border",
+        cond do
+          @stats.occupancy_rate >= 95 -> "bg-red-950 border-red-700"
+          @stats.occupancy_rate >= 80 -> "bg-yellow-950 border-yellow-700"
+          true -> "bg-gray-800 border-gray-700"
+        end
+      ]}>
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-gray-400 text-sm font-semibold uppercase">Garagenauslastung</p>
+          <%= cond do %>
+            <% @stats.occupancy_rate >= 95 -> %>
+              <span class="text-xs font-bold text-red-300 bg-red-900 border border-red-700 rounded px-2 py-0.5">
+                Voll
+              </span>
+            <% @stats.occupancy_rate >= 80 -> %>
+              <span class="text-xs font-bold text-yellow-300 bg-yellow-900 border border-yellow-700 rounded px-2 py-0.5">
+                Fast voll
+              </span>
+            <% true -> %>
+          <% end %>
+        </div>
+        <div class="w-full bg-gray-700 rounded-full h-8 overflow-hidden">
+          <div
+            class={[
+              "h-full rounded-full transition-all duration-300",
+              cond do
+                @stats.occupancy_rate >= 95 -> "bg-red-500"
+                @stats.occupancy_rate >= 80 -> "bg-yellow-500"
+                true -> "bg-green-500"
+              end
+            ]}
+            style={"width: #{@stats.occupancy_rate}%"}
+          >
+            <div class="h-full flex items-center justify-center text-white text-sm font-bold">
+              {if @stats.occupancy_rate > 10, do: "#{@stats.occupancy_rate}%"}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Levels Overview --%>
+      <div class="space-y-6">
+        <h2 class="text-2xl font-bold text-gray-100">Nach Etage</h2>
+
+        <%= for level_stat <- @stats.levels do %>
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <%!-- Level Header --%>
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h3 class="text-xl font-bold text-gray-100">Etage {level_stat.level.number}</h3>
+                <p class="text-gray-400 text-sm mt-1">
+                  {level_stat.occupied_spots} / {level_stat.total_spots} Plätze belegt
+                </p>
+              </div>
+              <div class="text-right">
+                <p class={[
+                  "text-3xl font-bold",
+                  cond do
+                    level_stat.occupancy_rate >= 95 -> "text-red-400"
+                    level_stat.occupancy_rate >= 80 -> "text-yellow-400"
+                    true -> "text-green-400"
+                  end
+                ]}>
+                  {level_stat.occupancy_rate}%
+                </p>
+              </div>
+            </div>
+
+            <%!-- Mini Progress Bar --%>
+            <div class="w-full bg-gray-700 rounded-full h-2 mb-6 overflow-hidden">
+              <div
+                class={[
+                  "h-full rounded-full transition-all duration-300",
+                  cond do
+                    level_stat.occupancy_rate >= 95 -> "bg-red-500"
+                    level_stat.occupancy_rate >= 80 -> "bg-yellow-500"
+                    true -> "bg-green-500"
+                  end
+                ]}
+                style={"width: #{level_stat.occupancy_rate}%"}
+              >
+              </div>
+            </div>
+
+            <%!-- Spot Grid - Garage Layout --%>
+            <div class="relative">
+              <%!-- Level Garage Blueprint --%>
+              <div class="rounded-3xl border border-gray-700 bg-slate-950 p-4 shadow-lg shadow-black/20">
+                <div class="flex items-center justify-between mb-4 text-sm text-gray-400 uppercase tracking-[0.2em]">
+                  <span class="font-semibold">Level {level_stat.level.number}</span>
+                  <span>Garagenplan</span>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3 mb-4">
+                  <%= for spot <- level_stat.level.spots do %>
+                    <% active_ticket =
+                      if spot.is_occupied and spot.tickets do
+                        Enum.find(spot.tickets, &is_nil(&1.exit_time))
+                      else
+                        nil
+                      end
+
+                    spot_type =
+                      Map.get(
+                        spot,
+                        :spot_type,
+                        cond do
+                          spot.permanent_user != nil -> :permanent
+                          spot.is_occupied -> :guest_occupied
+                          true -> :guest_available
+                        end
+                      ) %>
+
+                    <div class="relative col-span-2">
+                      <button
+                        phx-click={JS.toggle(to: "#spot-details-#{spot.id}")}
+                        class={[
+                          "w-full h-24 rounded-3xl border-2 transition-all duration-200 p-3 text-left flex flex-col justify-between",
+                          cond do
+                            spot_type == :permanent and spot.is_occupied ->
+                              "bg-violet-700 border-violet-500 text-white shadow-violet-500/15 hover:border-violet-400"
+
+                            spot_type == :permanent ->
+                              "bg-sky-700 border-sky-500 text-white shadow-sky-500/15 hover:border-sky-400"
+
+                            spot_type == :guest_occupied ->
+                              "bg-red-700 border-red-500 text-white shadow-red-500/10 hover:border-red-400"
+
+                            true ->
+                              "bg-emerald-700 border-emerald-500 text-white shadow-emerald-500/10 hover:border-emerald-400"
+                          end
+                        ]}
+                        title={
+                          cond do
+                            spot_type == :permanent and spot.is_occupied ->
+                              "Platz ##{spot.id} - Dauerparkplatz belegt"
+
+                            spot_type == :permanent ->
+                              "Platz ##{spot.id} - Reservierter Dauerparkplatz"
+
+                            active_ticket ->
+                              "Platz ##{spot.id} - Belegt"
+
+                            true ->
+                              "Platz ##{spot.id} - Frei"
+                          end
+                        }
+                      >
+                        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.12em]">
+                          <span>Platz #{spot.id}</span>
+                          <span>
+                            <%= if spot_type == :permanent and spot.is_occupied do %>
+                              P
+                            <% else %>
+                              <%= if spot_type == :permanent do %>
+                                R
+                              <% else %>
+                                <%= if spot.is_occupied do %>
+                                  <span class="material-icons text-xs leading-none">block</span>
+                                <% else %>
+                                  P
+                                <% end %>
+                              <% end %>
+                            <% end %>
+                          </span>
+                        </div>
+                        <div class="mt-2 text-[0.7rem] leading-4 text-gray-200">
+                          <%= if spot_type == :permanent and spot.is_occupied do %>
+                            <div>Dauerparker</div>
+                            <div class="text-[0.65rem] text-slate-200 truncate">
+                              Ticket: {String.slice(active_ticket.id, 0..7)}...
+                            </div>
+                          <% else %>
+                            <%= if spot_type == :permanent do %>
+                              <div>Reserviert</div>
+                              <div class="text-[0.65rem] text-slate-200 truncate">
+                                Dauerparker
+                              </div>
+                            <% else %>
+                              <%= if active_ticket do %>
+                                <div>Belegt</div>
+                                <div class="text-[0.65rem] text-slate-200 truncate">
+                                  Ticket: {String.slice(active_ticket.id, 0..7)}...
+                                </div>
+                              <% else %>
+                                Frei
+                              <% end %>
+                            <% end %>
+                          <% end %>
+                        </div>
+                      </button>
+
+                      <div
+                        id={"spot-details-#{spot.id}"}
+                        class="absolute top-full left-0 mt-2 w-80 bg-gray-900 border border-gray-700 rounded-3xl shadow-2xl shadow-black/40 hidden"
+                        style="z-index: 1000;"
+                      >
+                        <div class="p-4">
+                          <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-base font-semibold text-gray-100">
+                              Platz ##{spot.id}
+                            </h4>
+                            <button
+                              phx-click={JS.hide(to: "#spot-details-#{spot.id}")}
+                              class="text-gray-400 hover:text-gray-200"
+                            >
+                              <span class="material-icons text-base leading-none">close</span>
+                            </button>
+                          </div>
+
+                          <div class="space-y-3 text-sm text-gray-300">
+                            <div class="flex items-center justify-between">
+                              <span>Status</span>
+                              <span class={
+                                if(spot.is_occupied, do: "text-red-300", else: "text-emerald-300")
+                              }>
+                                {if spot.is_occupied, do: "Belegt", else: "Frei"}
+                              </span>
+                            </div>
+                            <div class="border-t border-gray-700 pt-3">
+                              <p class="text-xs text-gray-500 uppercase tracking-[0.2em] mb-2">
+                                Platzdetails
+                              </p>
+                              <p class="text-gray-200">
+                                {if active_ticket,
+                                  do: "Aktuell belegt mit aktivem Ticket",
+                                  else: "Bereit zum Einparken"}
+                              </p>
+                            </div>
+                            <%= if active_ticket do %>
+                              <div class="border-t border-gray-700 pt-3">
+                                <p class="text-xs text-gray-500 uppercase tracking-[0.2em] mb-2">
+                                  Ticket ID
+                                </p>
+                                <p class="text-gray-200 break-all">{active_ticket.id}</p>
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+
+                <div class="grid grid-cols-4 gap-3 text-xs text-gray-400">
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 border border-emerald-400">
+                    </span>
+                    <span>Frei</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500 border border-red-400"></span>
+                    <span>Gast belegt</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-sky-500 border border-sky-400"></span>
+                    <span>Dauerparkplatz reserviert</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-violet-500 border border-violet-400">
+                    </span>
+                    <span>Dauerparker eingeparkt</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="bg-gray-800 rounded-lg p-12 border border-gray-700 text-center">
+        <p class="text-gray-400 text-lg">Keine Garagendaten verfügbar</p>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>
+
+<script :type={Phoenix.LiveView.ColocatedHook} name=".StatsHook">
+  export default {
+    mounted() {
+      // Handle copy to clipboard events
+      this.handleEvent("copy-to-clipboard", ({uuid}) => {
+        navigator.clipboard.writeText(uuid).then(() => {
+          // Could show a toast notification here
+          console.log("UUID copied to clipboard:", uuid);
+        }).catch(err => {
+          console.error("Failed to copy UUID:", err);
+        });
+      });
+
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', (event) => {
+        const spotDetails = document.querySelectorAll('[id^="spot-details-"]');
+        spotDetails.forEach(dropdown => {
+          if (!dropdown.contains(event.target) && !event.target.closest('button[phx-click*="spot-details"]')) {
+            dropdown.classList.add('hidden');
+          }
+        });
+      });
+    }
+  }
+</script>

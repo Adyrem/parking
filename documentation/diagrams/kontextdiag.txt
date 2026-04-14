@@ -1,0 +1,25 @@
+@startuml
+left to right direction
+
+actor "Gelegenheitsnutzer" as Guest
+actor "Dauermieter" as Tenant
+
+rectangle "Parkhaus-System" {
+}
+
+rectangle "Zahlungssystem" as Payment
+rectangle "Buchhaltungssystem" as Accounting
+
+Guest --> "Parkhaus-System" : Einfahrt / Ticket
+Guest <-- "Parkhaus-System" : Ticket / Ausfahrt
+
+Tenant --> "Parkhaus-System" : Zugangscode
+Tenant <-- "Parkhaus-System" : Zutritt
+
+"Parkhaus-System" --> Payment : Zahlungsbetrag
+Payment --> "Parkhaus-System" : Zahlungsbestätigung
+
+"Parkhaus-System" --> Accounting : Umsatzdaten
+Accounting --> "Parkhaus-System" : Buchungsrückmeldung
+
+@enduml

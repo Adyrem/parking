@@ -1,0 +1,62 @@
+@startuml
+
+entity ParkingGarage {
+  +id : int <<PK>>
+  name : string
+}
+
+entity Level {
+  +id : int <<PK>>
+  number : int
+  garage_id : int <<FK>>
+}
+
+entity ParkingSpot {
+  +id : int <<PK>>
+  is_occupied : boolean
+  level_id : int <<FK>>
+}
+
+entity Ticket {
+  +id : int <<PK>>
+  entry_time : datetime
+  exit_time : datetime
+  paid : boolean
+  spot_id : int <<FK>>
+}
+
+entity User {
+  +id : int <<PK>>
+  type : string
+}
+
+entity PermanentUser {
+  +id : int <<PK, FK>>
+  access_code : string
+  is_blocked : boolean
+  spot_id : int <<FK>>
+}
+
+entity Payment {
+  +id : int <<PK>>
+  amount : decimal
+  timestamp : datetime
+  ticket_id : int <<FK>>
+}
+
+entity Pricing {
+  +id : int <<PK>>
+  type : string
+}
+
+ParkingGarage ||--o{ Level
+Level ||--o{ ParkingSpot
+ParkingSpot ||--o{ Ticket
+
+User ||--|| PermanentUser
+PermanentUser ||--o| ParkingSpot
+
+Ticket ||--o{ Payment
+Pricing ||--o{ Ticket
+
+@enduml

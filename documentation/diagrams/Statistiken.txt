@@ -1,0 +1,13 @@
+@startuml
+actor Betreiber
+participant "Parkhaus-System" as System
+participant "Buchhaltungssystem" as Accounting
+
+Betreiber -> System : Zeitraum wählen
+System -> System : Daten aggregieren
+System -> Accounting : Umsatzdaten senden
+Accounting -> System : Bestätigung
+
+System -> Betreiber : Statistik anzeigen
+
+@enduml

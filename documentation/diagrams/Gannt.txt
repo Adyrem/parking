@@ -1,0 +1,33 @@
+@startgantt
+Labels on first column and right aligned
+language de
+Project starts 2026-02-16
+printscale weekly
+saturday are closed
+sunday are closed
+scale 1400*750
+
+-- Initialisierung --
+[Kickoff] happens 2026-02-16
+[Analyse Anforderungen] starts 2026-02-16 and ends 2026-02-20
+[Lastenheft erstellen] starts 2026-02-20 and ends 2026-03-18
+[Review 1] happens 2026-03-19
+
+-- Konzept --
+[Systemanalyse] starts 2026-03-23 and ends 2026-03-25
+[Architektur & Design] starts 2026-03-25 and ends 2026-03-28
+[Konzeptdokumentation] starts 2026-03-28 and ends 2026-03-31
+
+-- Realisierung --
+[Grundstruktur implementieren] starts 2026-04-01 and ends 2026-04-07
+[Parklogik implementieren] starts 2026-04-07 and ends 2026-04-14
+[GUI umsetzen] starts 2026-04-10 and ends 2026-04-20
+[Integration & Tests] starts 2026-04-20 and ends 2026-05-01
+[Review 2] happens 2026-04-16
+
+-- Dokumentation --
+[Produktdokumentation schreiben] starts 2026-04-10 and ends 2026-05-05
+[Präsentation erstellen] starts 2026-05-05 and ends 2026-05-10
+[Abgabe & Präsentation] happens 2026-05-11
+
+@endgantt

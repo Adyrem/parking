@@ -1,0 +1,90 @@
+datadog-serverless:
+  type: Web
+  title: "The State of Serverless"
+  author: Datadog
+  url: https://www.datadoghq.com/state-of-serverless/
+  date: 2023
+
+gcp-pricing:
+  type: Web
+  title: "Cloud Functions Pricing"
+  author: Google Cloud
+  url: https://cloud.google.com/functions/pricing
+  date: 2024
+
+opentofu-manifesto:
+  type: Web
+  title: "The OpenTofu Manifesto"
+  author: OpenTofu
+  url: https://opentofu.org/manifesto/
+  date: 2023
+
+gcp-architecture:
+  type: Web
+  title: "Google Cloud Architecture Framework: Reliability"
+  author: Google Cloud
+  url: https://cloud.google.com/architecture/framework/reliability
+  date: 2023
+
+shilkov-coldstart:
+  type: Web
+  title: "Serverless Cold Start Benchmark"
+  author: Shilkov, Mikhail
+  url: https://mikhail.io/serverless/coldstarts/
+  date: 2021
+
+gcp-iam-securely:
+  type: Web
+  title: "Use IAM securely | Best Practices"
+  author: Google Cloud
+  url: https://docs.cloud.google.com/iam/docs/using-iam-securely
+  date: 2024
+
+cloudflare-serverless:
+  type: Web
+  title: "What is Serverless Computing?"
+  author: Cloudflare
+  url: https://www.cloudflare.com/learning/serverless/what-is-serverless/
+  date: 2024
+
+gcp-storage-tutorial:
+  type: Web
+  title: "Cloud Storage tutorial | Cloud Run functions"
+  author: Google Cloud
+  url: https://cloud.google.com/functions/docs/tutorials/storage
+  date: 2024
+
+redhat-iac:
+  type: Web
+  title: "What is Infrastructure as Code (IaC)?"
+  author: Red Hat
+  url: https://www.redhat.com/en/topics/automation/what-is-infrastructure-as-code-iac
+  date: 2023
+
+gcp-adc:
+  type: Web
+  title: "How Application Default Credentials work"
+  author: Google Cloud
+  url: https://cloud.google.com/docs/authentication/application-default-credentials
+  date: 2024
+
+github-copilot-research:
+  type: Web
+  title: "Research: Quantifying GitHub Copilot’s impact on developer productivity"
+  author: ["Kalliamvakou, E."]
+  url: https://github.blog/2022-09-07-research-quantifying-github-copilots-impact-on-developer-productivity-and-happiness/
+  date: 2022
+
+gcloud-function-pricing:
+  type: Web
+  title: "Cloud Run functions (1st gen) pricing"
+  author: google
+  url: https://cloud.google.com/functions/pricing-1stgen
+  date: 2026
+
+gcloud-vm-pricing:
+  type: Web
+  title: "e2-small pricing and specs"
+  author: google
+  url: https://calculator.holori.com/gcp/vm/e2-small
+  date: 2026

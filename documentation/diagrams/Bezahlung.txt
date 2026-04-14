@@ -1,0 +1,19 @@
+@startuml
+actor Nutzer
+participant "Parkhaus-System" as System
+participant "Zahlungssystem" as Payment
+
+Nutzer -> System : Ticket scannen
+System -> System : Parkdauer berechnen
+System -> System : Gebühren berechnen
+
+System -> Payment : Zahlung anfragen
+Payment -> System : Ergebnis
+
+alt erfolgreich
+  System -> Nutzer : Ticket gültig
+else fehlgeschlagen
+  System -> Nutzer : Zahlung wiederholen
+end
+
+@enduml

@@ -1,0 +1,17 @@
+@startuml
+actor Dauermieter
+participant "Parkhaus-System" as System
+participant "Schranke" as Gate
+
+Dauermieter -> System : Code eingeben
+System -> System : Code prüfen
+System -> System : Sperrstatus prüfen
+
+alt gültig
+  System -> Gate : Öffnen
+  Gate -> Dauermieter : Einfahrt
+else ungültig
+  System -> Dauermieter : Zutritt verweigert
+end
+
+@enduml

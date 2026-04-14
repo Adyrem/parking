@@ -1,0 +1,34 @@
+@startuml
+
+skinparam componentStyle rectangle
+
+actor User
+
+rectangle "Web Browser" {
+  component "Web UI" as UI
+}
+
+rectangle "Application Server" {
+
+  component "ParkingSystem" as Core
+
+  component "PaymentService\n(Mock)" as Payment
+  component "AccountingService\n(Mock)" as Accounting
+  component "PricingStrategy" as Pricing
+  component "StatisticsService" as Stats
+
+}
+
+database "Database" as DB
+
+User --> UI
+UI --> Core
+
+Core --> Pricing
+Core --> Payment
+Core --> Accounting
+Core --> Stats
+
+Core --> DB
+
+@enduml
