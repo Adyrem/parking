@@ -1,0 +1,71 @@
+@startuml
+
+skinparam packageStyle rectangle
+skinparam defaultFontSize 12
+skinparam padding 6
+
+package "lib/parking_web/" {
+  package "live/" {
+    class ParkingLive <<LiveView>>
+    class AdminLive <<LiveView>>
+    class StatsLive <<LiveView>>
+  }
+  class Router
+}
+
+package "lib/parking/" {
+  class ParkingSystem <<Facade>>
+
+  package "users/" {
+    class User
+    class PermanentUser
+  }
+
+  package "pricing/" {
+    interface PricingStrategy <<Behaviour>>
+    class TimeBasedPricing
+    class FlatRatePricing
+  }
+
+  package "service/" {
+    class PaymentService <<Stub>>
+    class AccountingService <<Stub>>
+    class StatisticsService
+  }
+
+  package "schemas/" {
+    class ParkingGarage
+    class Level
+    class ParkingSpot
+    class Ticket
+    class Payment
+    class Pricing
+  }
+
+  class Repo
+}
+
+ParkingLive --> ParkingSystem
+AdminLive --> ParkingSystem
+StatsLive --> ParkingSystem
+StatsLive --> StatisticsService
+
+ParkingSystem --> PaymentService
+ParkingSystem --> AccountingService
+ParkingSystem --> PricingStrategy
+ParkingSystem --> Repo
+
+TimeBasedPricing ..|> PricingStrategy
+FlatRatePricing ..|> PricingStrategy
+
+StatisticsService --> Repo
+
+Repo --> ParkingGarage
+Repo --> Level
+Repo --> ParkingSpot
+Repo --> Ticket
+Repo --> Payment
+Repo --> Pricing
+Repo --> PermanentUser
+
+@enduml

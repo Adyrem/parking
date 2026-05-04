@@ -58,7 +58,10 @@ Die Wahl der Technologie basiert primär darauf, während der Erarbeitung des Pr
 
 Die Anwendung ist gemäss den Phoenix-Konventionen in zwei klar getrennte Bereiche gegliedert: die Geschäftslogik unter `lib/parking/` und die Webschicht unter `lib/parking_web/`. Innerhalb dieser Bereiche sind die Verantwortlichkeiten auf spezialisierte Module aufgeteilt.
 
-// TODO: Abbildung Modulübersicht / Paketdiagramm einfügen
+#figure(
+  image("../diagrams/Moduluebersicht.png", width: 100%),
+  caption: [Modulübersicht]
+)
 
 === Geschäftslogik
 
@@ -92,7 +95,7 @@ Enthält die Tarif-Konfiguration eines Parkhauses, den Typ (`time_based` oder `f
 
 *Parking.Users.PermanentUser*
 
-Eepräsentiert den Dauermieter mit Zugangscode, Sperrstatus, Mietdaten und einem fixen Parkplatz.
+Repräsentiert den Dauermieter mit Zugangscode, Sperrstatus, Mietdaten und einem fixen Parkplatz.
 
 === Preisberechnungsstrategie
 
@@ -134,9 +137,21 @@ Für Dauermieter authentifiziert sich der Nutzer mit seinem Zugangscode. Das Sys
 
 Zusätzlich zeigt die Seite eine tabellarische Übersicht aller Stockwerke und Parkplätze, wobei jeder Platz mit seinem Typ (Gast frei, Gast belegt, Dauermieter) gekennzeichnet ist.
 
-// TODO: Screenshot Parkhaus-Ansicht (Einfahrt Gelegenheitsnutzer) einfügen
-// TODO: Screenshot Parkhaus-Ansicht (Dauermieter-Bereich) einfügen
-// TODO: Screenshot Parkplatz-Übersichtstabelle einfügen
+#figure(
+  image("/documentation/screenshots/Einfahrt_gelegenheit.png", width: 100%),
+  caption: [Einfahrt Gelegenheitsnutzer]
+)
+
+#figure(
+  image("/documentation/screenshots/Einfahrt_permanent.png", width: 100%),
+  caption: [Dauermieter-Bereich]
+)
+
+#figure(
+  image("/documentation/screenshots/Etagen.png", width: 100%),
+  caption: [Etagen Ansicht]
+)
+
 
 === Administrationsoberfläche (AdminLive)
 
@@ -144,7 +159,14 @@ Die Administrationsoberfläche ist durch ein Passwort geschützt. Erst nach erfo
 
 Ein neuer Dauermieter wird mit automatisch generiertem UUID-Zugangscode angelegt. Das System weist ihm automatisch den nächsten freien Parkplatz zu und zeigt den generierten Code nach der Erstellung an. Die Miete eines Dauermieters kann als bezahlt markiert werden, wodurch das `rent_paid_until`-Datum um einen Monat verlängert und ein allfälliger Sperrstatus aufgehoben wird. Zusätzlich kann der Sperrstatus einzelner Dauermieter manuell umgeschaltet werden.
 
-// TODO: Screenshot Administrationsoberfläche einfügen
+#figure(
+  image("/documentation/screenshots/Admin_login.png", width: 100%),
+  caption: [Admin Login]
+)
+#figure(
+  image("/documentation/screenshots/Admin_Ansicht.png", width: 100%),
+  caption: [Admin Ansicht]
+)
 
 === Statistik-Ansicht (StatsLive)
 
@@ -152,7 +174,10 @@ Die Statistik-Ansicht zeigt Belegungs- und Umsatzdaten für das ausgewählte Par
 
 Die Belegungsstatistik umfasst die Gesamtanzahl Parkplätze, aufgeteilt nach Dauermieter-Plätzen, belegten Gast-Plätzen und freien Gast-Plätzen, sowie die Auslastungsquote in Prozent. Der Monatsumsatz zeigt den Umsatz des laufenden Monats, der Jahresumsatz jenen des laufenden Jahres. Beide werden nach Gelegenheitsnutzern und Dauermietern aufgeschlüsselt dargestellt.
 
-// TODO: Screenshot Statistik-Ansicht einfügen
+#figure(
+  image("/documentation/screenshots/Parkstatistiken.png", width: 100%),
+  caption: [Statistik-Ansicht]
+)
 
 == Datenbankimplementierung und -anbindung
 
@@ -178,7 +203,10 @@ Die Persistenz erfolgt über eine relationale PostgreSQL-Datenbank. Das Schema w
   caption: [Datenbankstruktur]
 )
 
-// TODO: ERD-Abbildung einfügen
+#figure(
+  image("../diagrams/ERD_Realisierung.png", width: 100%),
+  caption: [Entity-Relationship-Diagramm]
+)
 
 === Designentscheidungen
 
@@ -196,7 +224,7 @@ Alle Schemaänderungen werden als Ecto-Migrationen eingecheckt. Dies stellt sich
 
 === Datenzugriff
 
-Der Datenzugriff erfolgt ausschliesslich über das Ecto-Repository-Modul (`Parking.Repo`). Direkte SQL-Abfragen werden nicht verwendet. Komplexere Abfragen – etwa die Suche nach dem nächsten freien Parkplatz mit ausgeglichener Verteilung oder die Umsatzauswertung nach Kundenkategorie – werden über die Ecto-Query-DSL formuliert.
+Der Datenzugriff erfolgt ausschliesslich über das Ecto-Repository-Modul (`Parking.Repo`). Direkte SQL-Abfragen werden nicht verwendet. Komplexere Abfragen - etwa die Suche nach dem nächsten freien Parkplatz mit ausgeglichener Verteilung oder die Umsatzauswertung nach Kundenkategorie - werden über die Ecto-Query-DSL formuliert.
 
 Ecto-Changesets werden für alle schreibenden Operationen eingesetzt. Sie zentralisieren die Validierungsregeln und stellen sicher, dass nur konsistente Daten in die Datenbank gelangen.
 
@@ -304,9 +332,9 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       columns: 2,
       [*ID*], [TC-06],
       [*Beschreibung*], [Tagespauschale greift],
-      [*Vorgehen*], [Ein Ticket mit 25 Stunden Parkdauer wird an `TimeBasedPricing.calculate/2` übergeben.],
+      [*Vorgehen*], [Ein Ticket mit 25 Stunden Parkdauer wird an `TimeBasedPricing.calculate/2` übergeben. Die Konfiguration verwendet die spezifikationskonforme Tagespauschale von CHF 35.00.],
       [*Erwartetes Ergebnis*], [Pauschale wird angewendet],
-      [*Tatsächliches Ergebnis*], [Es werden 2 Tagespauschalen à CHF 20.00 berechnet (CHF 40.00 total). Der Stundentarif wird nicht angewendet.],
+      [*Tatsächliches Ergebnis*], [Es werden 2 Tagespauschalen à CHF 35.00 berechnet (CHF 70.00 total). Der Stundentarif wird nicht angewendet.],
       [*Status*], [Bestanden],
       [*Referenz*], [F-13],
     ),
@@ -374,7 +402,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       [*Beschreibung*], [Bezahlung fehlgeschlagen],
       [*Vorgehen*], [Der `PaymentService` wird durch einen `FailingStub` ersetzt. Anschliessend wird `process_payment/1` aufgerufen.],
       [*Erwartetes Ergebnis*], [Fehlermeldung wird angezeigt],
-      [*Tatsächliches Ergebnis*], [`{:error, :payment_failed}` wird zurückgegeben, Die Transaktion wird zurückgerollt. Das Ticket bleibt unbezahlt und der Parkplatz belegt.],
+      [*Tatsächliches Ergebnis*], [`{:error, :payment_failed}` wird zurückgegeben. Die Transaktion wird zurückgerollt. Das Ticket bleibt unbezahlt und der Parkplatz belegt.],
       [*Status*], [Bestanden],
       [*Referenz*], [NF-01],
     ),
@@ -481,6 +509,74 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       [*Referenz*], [NF-01],
     ),
     caption: [Testergebnis TC-16]
+  )
+]
+
+#[
+  #show figure: set align(left)
+  #figure(
+    table(
+      columns: 2,
+      [*ID*], [TC-19],
+      [*Beschreibung*], [Spezifikationskonforme Wochentagstarife],
+      [*Vorgehen*], [Ein Ticket mit 2 Stunden Parkdauer am Donnerstag (10:00-12:00) wird mit der vollständigen Tarifkonfiguration gemäss Lastenheft Anhang 5.1 an `TimeBasedPricing.calculate/2` übergeben.],
+      [*Erwartetes Ergebnis*], [Tageszeitslot wird korrekt angewendet],
+      [*Tatsächliches Ergebnis*], [Der Slot 09:00-18:00 (CHF 3.60/Std.) wird erkannt. Es werden 8 Viertelstunden à CHF 0.90 berechnet (CHF 7.20 total).],
+      [*Status*], [Bestanden],
+      [*Referenz*], [F-11],
+    ),
+    caption: [Testergebnis TC-19]
+  )
+]
+
+#[
+  #show figure: set align(left)
+  #figure(
+    table(
+      columns: 2,
+      [*ID*], [TC-20],
+      [*Beschreibung*], [Tarifwechsel an Slotgrenze (Cross-Slot-Abrechnung)],
+      [*Vorgehen*], [Ein Ticket mit Einfahrt 17:50 und Ausfahrt 18:10 an einem Wochentag wird an `TimeBasedPricing.calculate/2` übergeben.],
+      [*Erwartetes Ergebnis*], [Der Tarif zu Beginn jeder Viertelstunde gilt für diese Viertelstunde],
+      [*Tatsächliches Ergebnis*], [Die Viertelstunde ab 17:45 wird mit CHF 3.60/Std. (Tagstarif, CHF 0.90) abgerechnet, die Viertelstunde ab 18:00 mit CHF 2.80/Std. (Abendtarif, CHF 0.70). Total CHF 1.60.],
+      [*Status*], [Bestanden],
+      [*Referenz*], [F-11, F-12],
+    ),
+    caption: [Testergebnis TC-20]
+  )
+]
+
+#[
+  #show figure: set align(left)
+  #figure(
+    table(
+      columns: 2,
+      [*ID*], [TC-21],
+      [*Beschreibung*], [Grenzwert 24 Stunden: Stundentarif statt Tagespauschale],
+      [*Vorgehen*], [Ein Ticket mit exakt 24 Stunden Parkdauer wird an `TimeBasedPricing.calculate/2` übergeben.],
+      [*Erwartetes Ergebnis*], [Tagespauschale wird bei exakt 24 Stunden nicht ausgelöst],
+      [*Tatsächliches Ergebnis*], [Die Bedingung `duration > 86400` ist `false`. Es werden 96 Viertelstunden à CHF 0.75 berechnet (CHF 72.00 total). Die Tagespauschale wird erst ab mehr als 24 Stunden angewendet.],
+      [*Status*], [Bestanden],
+      [*Referenz*], [F-13],
+    ),
+    caption: [Testergebnis TC-21]
+  )
+]
+
+#[
+  #show figure: set align(left)
+  #figure(
+    table(
+      columns: 2,
+      [*ID*], [TC-22],
+      [*Beschreibung*], [Feiertagstarife überschreiben Wochentagstarife],
+      [*Vorgehen*], [Ein Ticket mit 2 Stunden Parkdauer am 01.01.2026 (Neujahr, Donnerstag) wird mit der vollständigen Tarifkonfiguration an `TimeBasedPricing.calculate/2` übergeben.],
+      [*Erwartetes Ergebnis*], [Feiertagstarif wird angewendet statt Wochentagstarif],
+      [*Tatsächliches Ergebnis*], [Der Feiertag wird erkannt. Der Slot 09:00-18:00 (CHF 3.20/Std.) aus den Feiertagstarifen wird angewendet. Es werden 8 Viertelstunden à CHF 0.80 berechnet (CHF 6.40 total). Der Wochentagstarif (CHF 3.60/Std.) wird nicht angewendet.],
+      [*Status*], [Bestanden],
+      [*Referenz*], [F-11],
+    ),
+    caption: [Testergebnis TC-22]
   )
 ]
 

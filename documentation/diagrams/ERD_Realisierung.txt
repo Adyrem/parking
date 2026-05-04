@@ -1,0 +1,89 @@
+@startuml
+
+skinparam defaultFontSize 12
+skinparam padding 5
+
+entity ParkingGarage {
+  +id : int <<PK>>
+  --
+  name : string
+}
+
+entity Level {
+  +id : int <<PK>>
+  --
+  number : int
+  garage_id : int <<FK>>
+}
+
+entity ParkingSpot {
+  +id : int <<PK>>
+  --
+  is_occupied : boolean
+  level_id : int <<FK>>
+}
+
+entity Ticket {
+  +id : uuid <<PK>>
+  --
+  entry_time : datetime
+  exit_time : datetime
+  paid : boolean
+  spot_id : int <<FK>>
+  pricing_id : int <<FK>>
+  permanent_user_id : int <<FK, nullable>>
+}
+
+entity Pricing {
+  +id : int <<PK>>
+  --
+  type : string
+  config : jsonb
+  garage_id : int <<FK>>
+}
+
+entity Payment {
+  +id : int <<PK>>
+  --
+  amount : decimal
+  timestamp : datetime
+  ticket_id : uuid <<FK>>
+}
+
+entity User {
+  +id : int <<PK>>
+  --
+  type : string
+}
+
+entity PermanentUser {
+  +id : int <<PK, FK>>
+  --
+  name : string
+  access_code : string
+  is_blocked : boolean
+  rent_paid_until : date
+  last_rent_payment_at : datetime
+  spot_id : int <<FK>>
+}
+
+entity Settings {
+  +id : int <<PK>>
+  --
+  key : string
+  value : string
+}
+
+ParkingGarage ||--o{ Level
+ParkingGarage ||--o{ Pricing
+Level ||--o{ ParkingSpot
+ParkingSpot ||--o{ Ticket
+Pricing ||--o{ Ticket
+
+User ||--|| PermanentUser
+PermanentUser |o--o{ Ticket
+PermanentUser ||--o| ParkingSpot
+
+Ticket ||--o{ Payment
+
+@enduml

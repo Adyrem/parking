@@ -5,23 +5,19 @@ defmodule ParkingWeb.PageControllerTest do
     # Create a test garage first
     {:ok, garage} = Parking.Repo.insert(%Parking.ParkingGarage{name: "Test Garage"})
 
-    # Create pricing for the garage
+    # Create pricing for the garage using the key format the implementation expects
     {:ok, _pricing} =
       Parking.Repo.insert(%Parking.Pricing{
         garage_id: garage.id,
         type: "time_based",
         config: %{
-          "base_rate" => 2.0,
-          "hourly_rate" => 3.0,
-          "daily_rate" => 20.0,
+          "rate_per_hour" => 3.0,
+          "daily_rate" => 35.0,
           "time_slots" => [
-            %{"start_time" => "06:00", "end_time" => "18:00", "rate" => 3.0},
-            %{"start_time" => "18:00", "end_time" => "22:00", "rate" => 4.0},
-            %{"start_time" => "22:00", "end_time" => "06:00", "rate" => 2.0}
-          ],
-          "weekend_multiplier" => 1.5,
-          "holiday_multiplier" => 2.0,
-          "quarter_hour_billing" => true
+            %{"from" => "06:00", "to" => "18:00", "rate_per_hour" => 3.60},
+            %{"from" => "18:00", "to" => "21:00", "rate_per_hour" => 2.80},
+            %{"from" => "21:00", "to" => "24:00", "rate_per_hour" => 2.40}
+          ]
         }
       })
 

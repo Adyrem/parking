@@ -105,10 +105,14 @@ defmodule Parking.Pricing.TimeBasedPricing do
   defp parse_time_slot("24:00"), do: 24 * 60
 
   defp parse_time_slot(time_string) do
-    case Time.from_iso8601(time_string) do
-      {:ok, time} -> time.hour * 60 + time.minute
-      # fallback
-      {:error, _} -> 0
+    case String.split(time_string, ":") do
+      [h, m | _] ->
+        {hours, _} = Integer.parse(h)
+        {minutes, _} = Integer.parse(m)
+        hours * 60 + minutes
+
+      _ ->
+        0
     end
   end
 

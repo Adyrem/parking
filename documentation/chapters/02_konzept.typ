@@ -53,9 +53,9 @@ Beim Einfahren erhält ein Gelegenheitsnutzer ein Parkticket. Während der Parkd
     [F-08], [Fixe Parkplätze], [Dauermietern feste Plätze zuweisen],
     [F-09], [Parkdauer berechnen], [Dauer zwischen Ein- und Ausfahrt bestimmen],
     [F-10], [Gebühren berechnen], [Kosten basierend auf Tarif berechnen],
-    [F-11], [Tarife verwalten], [Tarife nach Tageszeit, Wochentag und Feiertagen anwenden],
-    [F-12], [Viertelstundenabrechnung], [Abrechnung in 15-Minuten-Schritten],
-    [F-13], [Tagespauschale], [Automatische Tagespauschale >24h],
+    [F-11], [Tarife verwalten], [Tarife nach Tageszeit, Wochentag und Feiertagen anwenden. Konkrete Tarife siehe Anhang],
+    [F-12], [Viertelstundenabrechnung], [Abrechnung in 15-Minuten-Schritten. Der Tarif zu Beginn einer Viertelstunde gilt für die gesamte Viertelstunde],
+    [F-13], [Tagespauschale], [Automatische Tagespauschale von CHF 35.00 pro Tag ab 24 Stunden Parkdauer. Angebrochene Tage werden vollständig verrechnet],
     [F-14], [Sperrlogik], [Dauermieter bei Nichtzahlung sperren],
     [F-15], [Ein-/Ausfahrten protokollieren], [Alle Bewegungen speichern],
     [F-16], [Parkplätze anzeigen], [Freie und belegte Plätze darstellen],
@@ -432,7 +432,7 @@ Beim Einfahren erhält ein Gelegenheitsnutzer ein Parkticket. Während der Parkd
     [*Kritikalität*], [Sehr hoch],
     [*Verknüpfungen*], [UC-03, UC-04],
     [*Funktionale Anforderungen*], [F-21 Austrittsticket erstellen],
-    [*Nicht-funktionale Anforderungen*], [NF-01 Zuverlässigkeit, NF-03 Bedienbarkeit]
+    [*Nicht-funktionale Anforderungen*], [NF-01 Zuverlässigkeit, NF-03 Benutzbarkeit]
   ),
   caption: [Use Case UC-13]
 )
@@ -580,7 +580,7 @@ Das Zustandsdiagramm des Ticket beschreibt den gesamten Lebenszyklus eines Parkv
 === ERD
 
 #figure(
-  image("../diagrams/ERD.png", width: 70%),
+  image("../diagrams/ERD_Konzept.png", width: 70%),
   caption: [
     ERD
   ]
@@ -710,7 +710,11 @@ Die folgenden Komponenten werden getestet:
       [TC-15], [System reagiert schnell], [Antwortzeit < definierter Schwelle], [NF-02],
       [TC-16], [System bleibt stabil], [Keine Abstürze bei Wiederholung], [NF-01],
       [TC-17], [Daten bleiben konsistent], [Keine inkonsistenten Zustände], [NF-04, NF-07],
-      [TC-18], [Benutzeroberfläche verständlich], [Bedienung ohne Anleitung möglich], [NF-03]
+      [TC-18], [Benutzeroberfläche verständlich], [Bedienung ohne Anleitung möglich], [NF-03],
+      [TC-19], [Spezifikationskonforme Wochentagstarife], [Tageszeitslot wird korrekt angewendet], [F-11],
+      [TC-20], [Tarifwechsel an Slotgrenze (Cross-Slot-Abrechnung)], [Tarif zu Beginn jeder Viertelstunde gilt für diese Viertelstunde], [F-11, F-12],
+      [TC-21], [Grenzwert 24 Stunden: Stundentarif statt Tagespauschale], [Tagespauschale greift erst ab mehr als 24 Stunden], [F-13],
+      [TC-22], [Feiertagstarife überschreiben Wochentagstarife], [Feiertagstarif wird anstelle des Wochentagstarifs angewendet], [F-11]
     ),
     caption: [Testfälle]
   ) <testfaelle>

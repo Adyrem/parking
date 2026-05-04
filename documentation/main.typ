@@ -67,8 +67,9 @@
       [Wozu wurde das Hilfsmittel eingesetzt?],
       [Betroffene Stellen],
     ),
-    [Typst], [Rechtschreibkorrektur], [Gesamtes Dokument],
-    [ChatGPT], [Rechtschreibkorrektur], [Gesamtes Dokument],    [plantuml], [Diagramm Erstellung], [Abbildungen],
+    [Typst], [Dokumentenerstellung, Rechtschreibkorrektur], [Gesamtes Dokument],
+    [Claude], [Dokumentation abgleichen mit Code, Code generierung], [Initialisierung, Konzept, Realisierung],
+    [plantuml], [Diagramm Erstellung], [Abbildungen],
   ),
   caption: [Hilfsmittel (eigene Darstellung)]
 )
@@ -82,14 +83,9 @@
     table.header(
       [*Fachwort*], [*Bedeutung*],
     ),
-    /*[ADR (Architecture Decision Record)], [Dokumentationen, in denen Architekturentscheidungen begründet und festgehalten werden, um nachvollziehbar zu machen, warum bestimmte technische Lösungen gewählt wurden.],
-    [CI/CD (Continuous Integration/Continuous Deployment)], [Prozesse, die es ermöglichen, Codeänderungen kontinuierlich zu integrieren, automatisiert zu testen und anschließend in produktive Systeme zu deployen – essenziell für einen schnellen und iterativen Entwicklungsprozess.],
-    [Docker], [Eine Plattform zur Erstellung und Ausführung von Containern, die eine standardisierte, isolierte Umgebung für Anwendungen bereitstellt.],
-    [GPS (Global Positioning System)], [Ein satellitengestütztes System zur Standortbestimmung, das in der Applikation verwendet wird, um den aktuellen Standort des Nutzers zu ermitteln.],
-    [Linter], [Ein Tool, das Code oder Dokumente (z. B. Markdown) automatisch auf Einhaltung bestimmter Stil- und Formatierungsregeln überprüft.],
-    [Message Broker], [Ein System, das Nachrichten (z. B. zu Parkplatzbelegungen) zwischen verschiedenen Komponenten (wie Sensoren und der API) vermittelt, um eine asynchrone Kommunikation zu ermöglichen.],
-    [SMARP], [Name der Applikation was ein Akronym für Smart Parking ist.],*/
-
+    [BEAM (Bogdan's Erlang Abstract Machine)], [Die virtuelle Maschine, auf der Elixir und Erlang ausgeführt werden. Sie unterstützt Nebenläufigkeit und hohe Fehlertoleranz.],
+    [DSL (Domain Specific Language)], [Eine auf einen bestimmten Anwendungsbereich zugeschnittene Abfragesprache. Im Projekt wird die Ecto-Query-DSL für Datenbankabfragen verwendet.],
+    [UUID (Universally Unique Identifier)], [128-Bit-Bezeichner, der weltweit eindeutig ist. Im Projekt als Primärschlüssel für Parktickets verwendet.],
   ),
   caption: [Glossar (eigene Darstellung)]
 )
@@ -97,8 +93,8 @@
 #pagebreak()
 
 #heading(numbering: none)[Eigenständigkeitserklärung]
-Hiermit erklären ich, dass ich diese Arbeit ohne fremde Hilfe und ohne Verwendung anderer als angegebener Hilfsmittel verfasst haben.
+Hiermit bestätige ich, dass ich die vorliegende Semesterarbeit selbstständig erstellt habe und nur die angegebenen Quellen verwendet wurden.
 
-Bern, xx. März 2026
+Bern, 11. Mai 2026
 
 #align(center)[Adrian Aeschlimann]

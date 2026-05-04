@@ -5,177 +5,179 @@ defmodule Parking.Pricing.TimeBasedPricingTest do
 
   describe "calculate/2" do
     test "calculates basic hourly rate" do
-      config = %{
-        "base_rate" => 2.0,
-        "hourly_rate" => 3.0,
-        "daily_rate" => 20.0,
-        "time_slots" => [],
-        "weekend_multiplier" => 1.0,
-        "holiday_multiplier" => 1.0,
-        "quarter_hour_billing" => false
-      }
-
       strategy = %TimeBasedPricing{
-        time_slots: config["time_slots"],
+        time_slots: [],
         weekend_time_slots: nil,
         holiday_time_slots: nil,
         holidays: [],
-        daily_rate: config["daily_rate"],
-        default_rate_per_hour: config["hourly_rate"]
+        daily_rate: 35.0,
+        default_rate_per_hour: 3.0
       }
 
-      # 2 hours parking
+      # 2 hours parking: 8 quarters × (3.0/4)
       ticket = %{entry_time: ~U[2026-04-10 10:00:00Z], exit_time: ~U[2026-04-10 12:00:00Z]}
 
-      amount = TimeBasedPricing.calculate(strategy, ticket)
-      # base_rate + 2 * hourly_rate = 2 + 6 = 8
-      # 2 * 3.0
-      assert amount == 6.0
+      assert TimeBasedPricing.calculate(strategy, ticket) == 6.0
     end
 
     test "applies time slot rates" do
-      config = %{
-        "base_rate" => 0.0,
-        "hourly_rate" => 1.0,
-        "daily_rate" => 20.0,
-        "time_slots" => [
+      strategy = %TimeBasedPricing{
+        time_slots: [
           %{"from" => "06:00", "to" => "18:00", "rate_per_hour" => 3.0},
           %{"from" => "18:00", "to" => "22:00", "rate_per_hour" => 4.0},
-          %{"from" => "22:00", "to" => "23:59", "rate_per_hour" => 2.0}
+          %{"from" => "22:00", "to" => "24:00", "rate_per_hour" => 2.0}
         ],
-        "weekend_multiplier" => 1.0,
-        "holiday_multiplier" => 1.0,
-        "quarter_hour_billing" => false
-      }
-
-      strategy = %TimeBasedPricing{
-        time_slots: config["time_slots"],
         weekend_time_slots: nil,
         holiday_time_slots: nil,
         holidays: [],
-        daily_rate: config["daily_rate"],
-        default_rate_per_hour: config["hourly_rate"]
+        daily_rate: 35.0,
+        default_rate_per_hour: 1.0
       }
 
       # 2 hours during day slot (3.0/hour)
       ticket = %{entry_time: ~U[2026-04-10 10:00:00Z], exit_time: ~U[2026-04-10 12:00:00Z]}
 
-      amount = TimeBasedPricing.calculate(strategy, ticket)
       # 2 * 3.0
-      assert amount == 6.0
+      assert TimeBasedPricing.calculate(strategy, ticket) == 6.0
     end
 
     test "applies weekend rates" do
-      config = %{
-        "base_rate" => 2.0,
-        "hourly_rate" => 3.0,
-        "daily_rate" => 20.0,
-        "time_slots" => [],
-        "weekend_multiplier" => 1.5,
-        "holiday_multiplier" => 1.0,
-        "quarter_hour_billing" => false
-      }
-
       strategy = %TimeBasedPricing{
-        time_slots: config["time_slots"],
-        weekend_time_slots: [%{"from" => "00:00", "to" => "23:59", "rate_per_hour" => 4.5}],
+        time_slots: [],
+        weekend_time_slots: [%{"from" => "00:00", "to" => "24:00", "rate_per_hour" => 4.5}],
         holiday_time_slots: nil,
         holidays: [],
-        daily_rate: config["daily_rate"],
-        default_rate_per_hour: config["hourly_rate"]
+        daily_rate: 35.0,
+        default_rate_per_hour: 3.0
       }
 
-      # Weekend (Saturday)
+      # Weekend (Saturday 2026-04-12)
       ticket = %{entry_time: ~U[2026-04-12 10:00:00Z], exit_time: ~U[2026-04-12 12:00:00Z]}
 
-      amount = TimeBasedPricing.calculate(strategy, ticket)
       # 2 * 4.5
-      assert amount == 9.0
+      assert TimeBasedPricing.calculate(strategy, ticket) == 9.0
     end
 
     test "applies quarter hour billing" do
-      config = %{
-        "base_rate" => 0.0,
-        # 1 CHF per 15 minutes
-        "hourly_rate" => 4.0,
-        "daily_rate" => 20.0,
-        "time_slots" => [],
-        "weekend_multiplier" => 1.0,
-        "holiday_multiplier" => 1.0,
-        "quarter_hour_billing" => true
-      }
-
       strategy = %TimeBasedPricing{
-        time_slots: config["time_slots"],
+        time_slots: [],
         weekend_time_slots: nil,
         holiday_time_slots: nil,
         holidays: [],
-        daily_rate: config["daily_rate"],
-        default_rate_per_hour: config["hourly_rate"]
+        daily_rate: 35.0,
+        # 1 CHF per 15 minutes
+        default_rate_per_hour: 4.0
       }
 
       # 45 minutes = 3 quarter hours
       ticket = %{entry_time: ~U[2026-04-10 10:00:00Z], exit_time: ~U[2026-04-10 10:45:00Z]}
 
-      amount = TimeBasedPricing.calculate(strategy, ticket)
       # 3 * 1.0 (4.0/4)
-      assert amount == 3.0
+      assert TimeBasedPricing.calculate(strategy, ticket) == 3.0
     end
 
     test "applies daily flat rate after 24 hours" do
-      config = %{
-        "base_rate" => 2.0,
-        "hourly_rate" => 3.0,
-        "daily_rate" => 20.0,
-        "time_slots" => [],
-        "weekend_multiplier" => 1.0,
-        "holiday_multiplier" => 1.0,
-        "quarter_hour_billing" => false
-      }
-
       strategy = %TimeBasedPricing{
-        time_slots: config["time_slots"],
+        time_slots: [],
         weekend_time_slots: nil,
         holiday_time_slots: nil,
         holidays: [],
-        daily_rate: config["daily_rate"],
-        default_rate_per_hour: config["hourly_rate"]
+        daily_rate: 35.0,
+        default_rate_per_hour: 3.0
       }
 
-      # 25 hours parking
+      # 25 hours parking → 2 started days × CHF 35.00 (spec §5.1.3)
       ticket = %{entry_time: ~U[2026-04-10 10:00:00Z], exit_time: ~U[2026-04-11 11:00:00Z]}
 
-      amount = TimeBasedPricing.calculate(strategy, ticket)
-      # 2 * 20.0 (daily rate)
-      assert amount == 40.0
+      # Float.ceil(25/24) = 2 → 2 * 35.0
+      assert TimeBasedPricing.calculate(strategy, ticket) == 70.0
     end
 
     test "handles minimum parking time" do
-      config = %{
-        "base_rate" => 2.0,
-        "hourly_rate" => 3.0,
-        "daily_rate" => 20.0,
-        "time_slots" => [],
-        "weekend_multiplier" => 1.0,
-        "holiday_multiplier" => 1.0,
-        "quarter_hour_billing" => false
-      }
-
       strategy = %TimeBasedPricing{
-        time_slots: config["time_slots"],
+        time_slots: [],
         weekend_time_slots: nil,
         holiday_time_slots: nil,
         holidays: [],
-        daily_rate: config["daily_rate"],
-        default_rate_per_hour: config["hourly_rate"]
+        daily_rate: 35.0,
+        default_rate_per_hour: 3.0
       }
 
       # 5 minutes parking (should charge for 1 quarter hour)
       ticket = %{entry_time: ~U[2026-04-10 10:00:00Z], exit_time: ~U[2026-04-10 10:05:00Z]}
 
-      amount = TimeBasedPricing.calculate(strategy, ticket)
       # 1 * (3.0/4)
-      assert amount == 0.75
+      assert TimeBasedPricing.calculate(strategy, ticket) == 0.75
+    end
+  end
+
+  describe "spec-compliant tariff verification" do
+    setup do
+      strategy = %TimeBasedPricing{
+        time_slots: [
+          %{"from" => "00:00", "to" => "06:00", "rate_per_hour" => 2.50},
+          %{"from" => "06:00", "to" => "09:00", "rate_per_hour" => 2.80},
+          %{"from" => "09:00", "to" => "18:00", "rate_per_hour" => 3.60},
+          %{"from" => "18:00", "to" => "21:00", "rate_per_hour" => 2.80},
+          %{"from" => "21:00", "to" => "24:00", "rate_per_hour" => 2.40}
+        ],
+        weekend_time_slots: [
+          %{"from" => "00:00", "to" => "09:00", "rate_per_hour" => 2.40},
+          %{"from" => "09:00", "to" => "18:00", "rate_per_hour" => 3.20},
+          %{"from" => "18:00", "to" => "24:00", "rate_per_hour" => 2.40}
+        ],
+        holiday_time_slots: [
+          %{"from" => "00:00", "to" => "09:00", "rate_per_hour" => 2.40},
+          %{"from" => "09:00", "to" => "18:00", "rate_per_hour" => 3.20},
+          %{"from" => "18:00", "to" => "24:00", "rate_per_hour" => 2.40}
+        ],
+        holidays: ["2026-01-01", "2026-12-25"],
+        daily_rate: 35.0,
+        default_rate_per_hour: 2.50
+      }
+
+      %{strategy: strategy}
+    end
+
+    test "weekday daytime slot (09:00–18:00) at CHF 3.60/h", %{strategy: strategy} do
+      # Thursday 2026-04-09, 10:00–12:00 → 8 quarters in daytime slot
+      ticket = %{entry_time: ~U[2026-04-09 10:00:00Z], exit_time: ~U[2026-04-09 12:00:00Z]}
+      # 8 × (3.60/4) = 7.20
+      assert TimeBasedPricing.calculate(strategy, ticket) == 7.20
+    end
+
+    test "rate changes correctly at slot boundary (cross-slot billing)", %{strategy: strategy} do
+      # Thursday 2026-04-10, 17:50–18:10
+      # floor_to_quarter(17:50) = 17:45 → rate 3.60 (daytime) → 0.90
+      # quarter 18:00 → rate 2.80 (evening) → 0.70
+      ticket = %{entry_time: ~U[2026-04-10 17:50:00Z], exit_time: ~U[2026-04-10 18:10:00Z]}
+      assert TimeBasedPricing.calculate(strategy, ticket) == 1.60
+    end
+
+    test "exactly 24 hours uses hourly billing, not daily rate" do
+      # duration == 86400 is NOT > 86400, so quarterly billing applies
+      # Thursday 10:00 → Friday 10:00, no time slots → default_rate_per_hour
+      strategy = %TimeBasedPricing{
+        time_slots: [],
+        weekend_time_slots: nil,
+        holiday_time_slots: nil,
+        holidays: [],
+        daily_rate: 35.0,
+        default_rate_per_hour: 3.0
+      }
+
+      ticket = %{entry_time: ~U[2026-04-09 10:00:00Z], exit_time: ~U[2026-04-10 10:00:00Z]}
+      # 96 quarters × (3.0/4) = 72.0 — daily rate NOT triggered
+      assert TimeBasedPricing.calculate(strategy, ticket) == 72.0
+    end
+
+    test "applies holiday rates instead of weekday rates on configured holiday", %{
+      strategy: strategy
+    } do
+      # 2026-01-01 is New Year's Day (Thursday — would be weekday 3.60, but holiday overrides to 3.20)
+      ticket = %{entry_time: ~U[2026-01-01 10:00:00Z], exit_time: ~U[2026-01-01 12:00:00Z]}
+      # 8 quarters × (3.20/4) = 6.40
+      assert TimeBasedPricing.calculate(strategy, ticket) == 6.40
     end
   end
 end

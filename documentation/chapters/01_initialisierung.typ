@@ -10,11 +10,9 @@
       [*Abkürzung*], 
       [*Bedeutung*], 
     ),
-    [GUI], [Graphical User Interface],
-    [UML], [Unified Modeling Language],
-    [ERD], [Entity Relationship Diagram],
-    [API], [Application Programming Interface],
-    [IT], [Informationstechnologie]
+    [BEAM], [Bogdan's Erlang Abstract Machine],
+    [DSL], [Domain Specific Language],
+    [UUID], [Universally Unique Identifier]
   ),
   caption: [Abkürzungsverzeichnis]
 ) <abkürzungsverzeichnis>
@@ -33,7 +31,7 @@ Im Vorfeld wurde geprüft, ob eine bestehende Standardsoftware eingesetzt werden
 Die EasyParking AG verfügt über eine interne IT-Abteilung, hat jedoch keine eigenen Entwicklerkapazitäten für ein solches Projekt. Deshalb soll die Entwicklung der neuen Parkhaus-Software durch einen externen Anbieter erfolgen.
 
 
-== Situationsanalyse (IST-Zusatand)
+== Situationsanalyse (IST-Zustand)
 
 Die bestehende Software wird aktuell für den Betrieb der Parkhäuser verwendet und bildet den grundlegenden Parkprozess ab. Dazu gehört insbesondere der Ablauf von der Einfahrt eines Fahrzeugs bis zur Ausfahrt nach erfolgter Bezahlung.
 
@@ -147,7 +145,7 @@ Die Desktop-Anwendung wird lokal installiert und ausgeführt. Sie kann direkt au
 Die Webanwendung wird zentral betrieben und über einen Browser genutzt. Dadurch ist sie von verschiedenen Geräten aus zugänglich und einfacher zu warten. Allerdings ist die Entwicklung aufwendiger und der direkte Zugriff auf Hardware ist eingeschränkt.
 
 
-=== Machbarbeitsbeurteilung
+=== Machbarkeitsbeurteilung
 
 Beide Varianten sind grundsätzlich realisierbar. Die Webanwendung bietet Vorteile im späteren Betrieb, insbesondere bei Wartung und Zugriff. Für den Umfang dieser Semesterarbeit ist sie jedoch mit höherem Aufwand verbunden.
 
