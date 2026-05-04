@@ -44,20 +44,20 @@ defmodule Parking.Services.StatisticsService do
                                                                  acc ->
       decimal_amount = Decimal.to_float(amount)
 
-      Map.update(acc, String.to_atom(cat), decimal_amount, &(&1 + decimal_amount))
+      Map.update(acc, String.to_existing_atom(cat), decimal_amount, &(&1 + decimal_amount))
       |> Map.update(:total, decimal_amount, &(&1 + decimal_amount))
     end)
   end
 
   def calculate_monthly_revenue(year, month, garage_id, category \\ nil) do
     start_date = Date.new!(year, month, 1)
-    end_date = Date.add(start_date, Date.days_in_month(start_date))
+    end_date = Date.add(start_date, Date.days_in_month(start_date) - 1)
     calculate_revenue_by_period(start_date, end_date, garage_id, category)
   end
 
   def calculate_yearly_revenue(year, garage_id, category \\ nil) do
     start_date = Date.new!(year, 1, 1)
-    end_date = Date.new!(year + 1, 1, 1)
+    end_date = Date.new!(year, 12, 31)
     calculate_revenue_by_period(start_date, end_date, garage_id, category)
   end
 

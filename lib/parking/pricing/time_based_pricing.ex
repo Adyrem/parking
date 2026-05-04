@@ -47,13 +47,7 @@ defmodule Parking.Pricing.TimeBasedPricing do
   end
 
   defp rate_for(datetime, strategy) do
-    # Convert NaiveDateTime to DateTime if needed
-    datetime =
-      case datetime do
-        %NaiveDateTime{} -> DateTime.from_naive!(datetime, "Etc/UTC")
-        %DateTime{} -> datetime
-      end
-
+    datetime = DateTime.from_naive!(datetime, "Etc/UTC")
     date = DateTime.to_date(datetime)
     minutes = time_to_minutes(DateTime.to_time(datetime))
 

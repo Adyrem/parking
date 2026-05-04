@@ -26,10 +26,8 @@ defmodule Parking.ParkingSystemTest do
           garage_id: garage.id,
           type: "time_based",
           config: %{
-            "base_rate" => 2.0,
-            "hourly_rate" => 3.0,
-            "daily_rate" => 20.0,
-            "default_rate_per_hour" => 3.0
+            "rate_per_hour" => 3.0,
+            "daily_rate" => 35.0
           }
         })
 
@@ -39,14 +37,14 @@ defmodule Parking.ParkingSystemTest do
     test "guest enters parking successfully", %{garage: garage, pricing: pricing} do
       assert {:ok, ticket} = ParkingSystem.create_ticket(garage.id, pricing.id)
 
-      assert ticket.spot_id != nil
-      assert ticket.entry_time != nil
-      assert ticket.paid == false
+      assert ticket.spot_id
+      assert ticket.entry_time
+      refute ticket.paid
       assert ticket.pricing_id == pricing.id
 
       # Verify spot is now occupied
       spot = Repo.get!(ParkingSpot, ticket.spot_id)
-      assert spot.is_occupied == true
+      assert spot.is_occupied
     end
 
     test "guest cannot enter when no spots available", %{
@@ -72,25 +70,25 @@ defmodule Parking.ParkingSystemTest do
       # Exit
       {:ok, exited_ticket} = ParkingSystem.register_exit(paid_ticket)
 
-      assert exited_ticket.exit_time != nil
-      assert exited_ticket.paid == true
+      assert exited_ticket.exit_time
+      assert exited_ticket.paid
 
       # Verify spot is now free
       spot = Repo.get!(ParkingSpot, exited_ticket.spot_id)
-      assert spot.is_occupied == false
+      refute spot.is_occupied
     end
 
     test "pay then exit workflow", %{garage: garage, pricing: pricing} do
       {:ok, ticket} = ParkingSystem.create_ticket(garage.id, pricing.id)
 
       {:ok, paid_ticket} = ParkingSystem.process_payment(ticket)
-      assert paid_ticket.paid == true
+      assert paid_ticket.paid
 
       {:ok, exited_ticket} = ParkingSystem.register_exit(paid_ticket)
-      assert exited_ticket.exit_time != nil
+      assert exited_ticket.exit_time
 
       spot = Repo.get!(ParkingSpot, exited_ticket.spot_id)
-      assert spot.is_occupied == false
+      refute spot.is_occupied
     end
 
     # TC-12: Ausfahrt ohne Zahlung wird verweigert
@@ -100,7 +98,7 @@ defmodule Parking.ParkingSystemTest do
 
       # Spot must still be occupied
       spot = Repo.get!(ParkingSpot, ticket.spot_id)
-      assert spot.is_occupied == true
+      assert spot.is_occupied
     end
   end
 
@@ -133,11 +131,11 @@ defmodule Parking.ParkingSystemTest do
 
       # Transaction rolled back — ticket must still be unpaid
       reloaded = Repo.get!(Ticket, ticket.id)
-      assert reloaded.paid == false
+      refute reloaded.paid
 
       # Spot must still be occupied
       spot = Repo.get!(ParkingSpot, ticket.spot_id)
-      assert spot.is_occupied == true
+      assert spot.is_occupied
     end
   end
 
@@ -179,13 +177,13 @@ defmodule Parking.ParkingSystemTest do
 
       # Check that a ticket was created
       ticket = Repo.get_by(Ticket, permanent_user_id: perm_user.id) |> Repo.preload(:spot)
-      assert ticket != nil
+      assert ticket
       assert ticket.spot_id == perm_user.spot_id
-      assert ticket.exit_time == nil
+      refute ticket.exit_time
 
       # Check that spot is occupied
       spot = Repo.get!(ParkingSpot, perm_user.spot_id)
-      assert spot.is_occupied == true
+      assert spot.is_occupied
     end
 
     test "permanent user exits successfully", %{perm_user: perm_user} do
@@ -197,11 +195,11 @@ defmodule Parking.ParkingSystemTest do
 
       # Check that ticket has exit time
       ticket = Repo.get_by(Ticket, permanent_user_id: perm_user.id)
-      assert ticket.exit_time != nil
+      assert ticket.exit_time
 
       # Check that spot is free
       spot = Repo.get!(ParkingSpot, perm_user.spot_id)
-      assert spot.is_occupied == false
+      refute spot.is_occupied
     end
 
     test "blocked permanent user cannot enter", %{perm_user: perm_user} do

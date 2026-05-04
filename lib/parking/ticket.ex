@@ -34,14 +34,11 @@ defmodule Parking.Ticket do
   defp validate_required_if_guest(changeset) do
     permanent_user_id = get_field(changeset, :permanent_user_id)
 
-    if permanent_user_id == nil do
+    if is_nil(permanent_user_id) do
       validate_required(changeset, [:pricing_id])
     else
       changeset
     end
   end
 
-  def mark_paid(%__MODULE__{} = ticket) do
-    %{ticket | paid: true}
-  end
 end

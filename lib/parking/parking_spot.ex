@@ -18,11 +18,4 @@ defmodule Parking.ParkingSpot do
     |> assoc_constraint(:level)
   end
 
-  def assign(%__MODULE__{} = spot) do
-    %{spot | is_occupied: true}
-  end
-
-  def free(%__MODULE__{} = spot) do
-    %{spot | is_occupied: false}
-  end
 end

@@ -342,10 +342,6 @@ defmodule Parking.ParkingSystem do
           end
       end
     end)
-    |> case do
-      {:ok, perm_user} -> {:ok, perm_user}
-      {:error, reason} -> {:error, reason}
-    end
   end
 
   @doc "Release the permanent user's assigned spot"
@@ -368,7 +364,7 @@ defmodule Parking.ParkingSystem do
             )
             |> Repo.one()
 
-          if active_ticket == nil do
+          if is_nil(active_ticket) do
             Repo.rollback(:ticket_not_found)
           else
             ticket_changeset =
@@ -386,10 +382,6 @@ defmodule Parking.ParkingSystem do
           end
       end
     end)
-    |> case do
-      {:ok, perm_user} -> {:ok, perm_user}
-      {:error, reason} -> {:error, reason}
-    end
   end
 
   defp reload_permanent_user(id) do

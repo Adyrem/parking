@@ -93,7 +93,7 @@ defmodule Parking.Users.PermanentUserTest do
       changeset = PermanentUser.changeset(%PermanentUser{}, %{})
 
       refute changeset.valid?
-      assert "can't be blank" in errors_on_changeset(changeset).access_code
+      assert "can't be blank" in errors_on(changeset).access_code
     end
 
     test "validates access code is required" do
@@ -104,11 +104,4 @@ defmodule Parking.Users.PermanentUserTest do
     end
   end
 
-  defp errors_on_changeset(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
-        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
-      end)
-    end)
-  end
 end
