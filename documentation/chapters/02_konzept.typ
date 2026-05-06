@@ -471,17 +471,18 @@ Beim Einfahren erhält ein Gelegenheitsnutzer ein Parkticket. Während der Parkd
   ]
 )
 
+#page(flipped: true)[
 == Modellierung der Klassen
-
 
 === Klassendiagramm
 
-#figure(
-  image("../diagrams/class_diagram.png", width: 100%),
-  caption: [
-    Klassendiagramm
-  ]
-)
+  #figure(
+    image("../diagrams/class_diagram.png", width: 100%),
+    caption: [
+      Klassendiagramm
+    ]
+  )
+]
 
 
 === Beschreibung der Fachklassen
@@ -509,7 +510,7 @@ Zentrale Methoden sind das Belegen und Freigeben eines Parkplatzes. Diese Klasse
 
 Die Klasse Ticket enthält alle relevanten Daten eines Parkvorgangs. Dazu gehören insbesondere Einfahrtszeit, Ausfahrtszeit sowie der Zahlungsstatus.
 Sie bildet die Grundlage für mehrere Kernfunktionen des Systems, darunter die Berechnung der Parkdauer und der Gebühren sowie die Validierung bei der Ausfahrt.
-Das Ticket durchläuft verschiedene Zustände, etwa „aktiv“, „bezahlt“ oder „abgelaufen“, wodurch der Lebenszyklus eines Parkvorgangs abgebildet wird.
+Das Ticket durchläuft verschiedene Zustände, etwa „aktiv” oder „bezahlt”, wodurch der Lebenszyklus eines Parkvorgangs abgebildet wird.
 
 *User*
 
@@ -547,8 +548,7 @@ Zusätzlich können Regeln wie unterschiedliche Tarife je nach Tageszeit oder Wo
 
 *FlatRatePricing*
 
-Die Klasse FlatRatePricing bildet Pauschalpreise ab, beispielsweise bei sehr langen Parkdauern.
-Sie wird typischerweise in Kombination mit der zeitbasierten Berechnung verwendet, etwa wenn eine Tagespauschale ab einer bestimmten Dauer greift.
+Die Klasse FlatRatePricing bildet eine eigenständige Pauschalpreisberechnung ab, die unabhängig von der Tageszeit eine einheitliche Tagespauschale anwendet.
 
 *StatisticsService*
 
@@ -565,9 +565,9 @@ Das Zustandsdiagramm des ParkingSpot zeigt den Belegungsstatus eines Parkplatzes
   ]
 )
 
-Das Zustandsdiagramm des Ticket beschreibt den gesamten Lebenszyklus eines Parkvorgangs. Nach der Erstellung bei der Einfahrt wechselt das Ticket in den aktiven Zustand, in dem die Parkdauer läuft. Nach der Bezahlung wird es als bezahlt markiert und kann für die Ausfahrt verwendet werden. Erfolgt die Ausfahrt innerhalb einer definierten Zeit, wird das Ticket erfolgreich abgeschlossen. Wird diese Zeit überschritten, wechselt es in einen abgelaufenen Zustand und muss entsprechend nachbearbeitet werden.
+Das Zustandsdiagramm des Ticket beschreibt den gesamten Lebenszyklus eines Parkvorgangs. Nach der Erstellung bei der Einfahrt wechselt das Ticket in den aktiven Zustand, in dem die Parkdauer läuft. Nach der Bezahlung wird es als bezahlt markiert und kann für die Ausfahrt verwendet werden. Erfolgt die Ausfahrt, wird das Ticket abgeschlossen.
 #figure(
-  image("../diagrams/ticket_lifecycle.png", width: 100%),
+  image("../diagrams/ticket_lifecycle.png", width: 30%),
   caption: [
     Ticket Zustandsdiagramm
   ]
@@ -641,7 +641,7 @@ Die Datenhaltung erfolgt über eine relationale Datenbank auf Basis von PostgreS
 
 Die Kommunikation mit der Datenbank erfolgt ausschliesslich über die Anwendungsschicht. Direkte Zugriffe aus der Präsentationsschicht sind nicht vorgesehen. Die Datenbank enthält alle relevanten Entitäten wie Tickets, Parkplätze, Benutzer und Zahlungen.
 
-Externe Systeme wie das Zahlungssystem und das Buchhaltungssystem werden im Rahmen dieses Projekts nicht real angebunden, sondern durch Mock-Klassen simuliert. Diese simulierten Komponenten implementieren die gleichen Schnittstellen wie reale Systeme, sodass ein späterer Austausch ohne Änderungen an der Kernlogik möglich ist.
+Externe Systeme wie das Zahlungssystem und das Buchhaltungssystem werden im Rahmen dieses Projekts nicht real angebunden, sondern durch Mock-Klassen simuliert.
 
 Der Datenfluss im System beginnt mit einer Benutzeraktion im Web-Frontend. Die Anfrage wird an die Anwendungsschicht übergeben, dort verarbeitet und bei Bedarf durch Datenbankzugriffe oder Aufrufe von Services ergänzt. Anschliessend wird das Ergebnis an die Präsentationsschicht zurückgegeben und dem Benutzer angezeigt.
 

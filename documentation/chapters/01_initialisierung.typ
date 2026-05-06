@@ -144,19 +144,77 @@ Die Desktop-Anwendung wird lokal installiert und ausgeführt. Sie kann direkt au
 
 Die Webanwendung wird zentral betrieben und über einen Browser genutzt. Dadurch ist sie von verschiedenen Geräten aus zugänglich und einfacher zu warten. Allerdings ist die Entwicklung aufwendiger und der direkte Zugriff auf Hardware ist eingeschränkt.
 
+#heading(outlined: false, level: 4)[Webframework]
+
+#[
+  #show figure: set align(left)
+#figure(
+  table(
+    align: left,
+    columns: 4,
+    table.header(
+      [*Kriterium*],
+      [*Elixir / Phoenix*],
+      [*Express.js*],
+      [*Bewertung*],
+    ),
+    [Nebenläufigkeit], [Eingebaut (BEAM)], [Begrenzt (Single-threaded)], [Phoenix Vorteil],
+    [Lernkurve], [Hoch], [Niedrig], [Express Vorteil],
+    [Ökosystem], [Klein, spezialisiert], [Gross, weit verbreitet], [Express Vorteil],
+    [Echtzeit-UI], [LiveView nativ], [Zusätzliche Bibliotheken nötig], [Phoenix Vorteil],
+    [Vorwissen], [Keine Erfahrung], [Grundkenntnisse vorhanden], [Express Vorteil],
+    [Stabilität], [BEAM garantiert Fehlertoleranz], [Abhängig von Implementierung], [Phoenix Vorteil],
+  ),
+  caption: [Variantenvergleich Webframework]
+)
+]
+
+Für Express.js sind Grundkenntnisse vorhanden, was die Einarbeitung vereinfacht hätte. Elixir und Phoenix bieten jedoch eine bessere Grundlage für eine robuste, nebenläufige Anwendung. Ausserdem war das Kennenlernen einer neuen Technologie ein explizites Lernziel. Deshalb wurde Elixir/Phoenix gewählt.
+
+#heading(outlined: false, level: 4)[Vorgehensmodell]
+
+#[
+  #show figure: set align(left)
+#figure(
+  table(
+    align: left,
+    columns: 4,
+    table.header(
+      [*Kriterium*],
+      [*Wasserfall*],
+      [*Scrum*],
+      [*Bewertung*],
+    ),
+    [Planbarkeit], [Hoch], [Gering], [Wasserfall Vorteil],
+    [Flexibilität], [Gering], [Hoch], [Scrum Vorteil],
+    [Teamgrösse], [Geeignet für Einzelperson], [Für Teams ausgelegt], [Wasserfall Vorteil],
+    [Meilensteine], [Klar definiert], [Sprint-basiert], [Wasserfall Vorteil],
+    [Dokumentation], [Klar strukturiert], [Iterativ], [Wasserfall Vorteil],
+    [Overhead], [Gering], [Hoch (Meetings, Rollen)], [Wasserfall Vorteil],
+  ),
+  caption: [Variantenvergleich Vorgehensmodell]
+)
+]
+
+Scrum ist für Teams mit iterativer Entwicklung ausgelegt. Da das Projekt von einer einzelnen Person durchgeführt wird und die Meilensteine durch die Semesterarbeit vorgegeben sind, ist das Wasserfallmodell besser geeignet. Der geringere organisatorische Overhead kommt einem Einzelprojekt zugute.
+
 
 === Machbarkeitsbeurteilung
 
-Beide Varianten sind grundsätzlich realisierbar. Die Webanwendung bietet Vorteile im späteren Betrieb, insbesondere bei Wartung und Zugriff. Für den Umfang dieser Semesterarbeit ist sie jedoch mit höherem Aufwand verbunden.
+Beide Varianten (Desktop und Web) sind grundsätzlich realisierbar. Die Webanwendung bietet Vorteile im späteren Betrieb, insbesondere bei Wartung und Zugriff. Für den Umfang dieser Semesterarbeit ist sie jedoch mit höherem Aufwand verbunden. Die Desktop-Anwendung ist einfacher umzusetzen und erlaubt eine schnelle Entwicklung eines funktionalen Prototyps.
 
-Die Desktop-Anwendung ist einfacher umzusetzen und erlaubt eine schnelle Entwicklung eines funktionalen Prototyps. Die notwendigen Funktionen können damit ohne zusätzliche Infrastruktur realisiert werden.
+Beide Webframeworks sind für die Umsetzung geeignet. Express.js erlaubt dank vorhandener Grundkenntnisse einen schnelleren Einstieg. Elixir und Phoenix sind technisch überlegen, erfordern jedoch eine intensive Einarbeitungszeit.
+
+Sowohl Wasserfall als auch Scrum sind grundsätzlich anwendbar. Für ein Einzelprojekt mit vorgegebenen Meilensteinen bietet das Wasserfallmodell klare Vorteile, da der organisatorische Overhead von Scrum ohne Team kaum gerechtfertigt ist.
 
 
 === Variantenentscheid
 
-Für dieses Projekt wird eine Webanwendung gewählt. Diese Entscheidung basiert darauf, dass eine funktionierende Grundlage aufgebaut wird, welche in der Zukunft einfach erweitert werden kann.
+Für dieses Projekt wird eine Webanwendung gewählt. Diese Entscheidung basiert darauf, dass eine funktionierende Grundlage aufgebaut wird, welche in der Zukunft einfach erweitert werden kann. Ausserdem ermöglicht eine Webanwendung eine einfachere Demonstration des Produktes, ohne dass der Benutzer den Prototyp aufsetzen muss.
 
-Ausserdem ermöglicht eine Webanwendung eine einfachere Demonstration des Produktes, ohne dass der Benutzer den Prototyp aufsetzen muss.
+Als Webframework wird Elixir/Phoenix eingesetzt. Trotz höherer Lernkurve bietet die Plattform bessere Stabilität und eine native Lösung für Echtzeit-Weboberflächen über LiveView. Das Kennenlernen einer neuen Technologie war zudem ein explizites Lernziel.
+
+Als Vorgehensmodell wird das Wasserfallmodell gewählt. Die Meilensteine sind durch die Semesterarbeit vorgegeben und das Projekt wird von einer einzelnen Person durchgeführt, weshalb der Mehraufwand von Scrum nicht gerechtfertigt ist.
 
 
 == Projektmanagement
@@ -168,7 +226,7 @@ Für die Umsetzung des Projekts wird als Vorgehensmodell das Wasserfallmodell ge
 
 Die gewählten Phasen orientieren sich an der Vorlage der Semesterarbeit und bestehen aus Initialisierung, Konzept, Realisierung und Dokumentation.
 
-Der Zeitplan ist in Form eines Gantt-Diagramms dargestellt. Die Planung basiert auf den vorgegebenen Terminen und teilt die Arbeit in mehrere zusammenhängende Aufgaben auf. Während der Realisierung und Dokumentation gibt es bewusst Überschneidungen, um die Dokumentation parallel zur Umsetzung zu erstellen.
+Der Zeitplan ist in Form eines Gantt-Charts dargestellt. Die Planung basiert auf den vorgegebenen Terminen und teilt die Arbeit in mehrere zusammenhängende Aufgaben auf. Während der Realisierung und Dokumentation gibt es bewusst Überschneidungen, um die Dokumentation parallel zur Umsetzung zu erstellen.
 
 Die Planung ist bewusst einfach gehalten und fokussiert sich auf die wichtigsten Meilensteine sowie auf eine sinnvolle zeitliche Aufteilung der Arbeit.
 
@@ -212,3 +270,9 @@ Die Qualität der Lösung wird durch regelmässige Überprüfung der Anforderung
 === Konfigurationsmanagement
 
 Der Quellcode sowie die Projektdokumentation werden versioniert gespeichert. Änderungen werden nachvollziehbar dokumentiert, sodass jederzeit der aktuelle Stand des Projekts ersichtlich ist.
+
+Wie der Code sowohl auch die Dokumentation sind in einem Github-Repository gespeichert:
+
+#show link: underline
+https://github.com/Adyrem/parking
+

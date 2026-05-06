@@ -5,7 +5,7 @@
       <div>
         <h1 class="text-2xl font-bold text-gray-100">Parksystem - {@garage.name}</h1>
         <p class="text-sm text-gray-400">
-          Ticket workflow für gelegentliche Nutzer und Kartenworkflow für permanente Nutzer.
+          Ticketworkflow für Gelegenheitsnutzer und Kartenworkflow für Dauerparker.
         </p>
       </div>
       <div class="flex gap-3 items-center">
@@ -152,7 +152,7 @@
 
         <%!-- Permanent User Authentication --%>
         <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <h3 class="text-lg font-bold text-gray-100 mb-4">Permanent Nutzerkarte</h3>
+          <h3 class="text-lg font-bold text-gray-100 mb-4">Permanente Nutzerkarte</h3>
           <.form
             for={to_form(%{})}
             id="authenticate-card-form"
@@ -175,7 +175,7 @@
               <span class="material-icons align-middle text-base leading-none mr-1">
                 qr_code_scanner
               </span>
-              Karte Authentifizieren
+              Karte authentifizieren
             </button>
           </.form>
 
@@ -197,7 +197,7 @@
                     @authenticated_permanent_user.spot.is_occupied
                 }
               >
-                Einfahrt (Permanent)
+                Einfahrt (Dauerparker)
               </button>
 
               <button
@@ -216,7 +216,7 @@
                          @authenticated_permanent_user.spot.is_occupied)
                 }
               >
-                Ausfahrt (Permanent)
+                Ausfahrt (Dauerparker)
               </button>
 
               <button
@@ -256,7 +256,7 @@
                 type="submit"
                 class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
               >
-                <span class="material-icons align-middle text-base leading-none mr-1">qr_code_scanner</span>Ticket Laden
+                <span class="material-icons align-middle text-base leading-none mr-1">qr_code_scanner</span>Ticket laden
               </button>
             </.form>
             <p class="text-xs text-gray-400 mt-2">
@@ -322,7 +322,7 @@
                   Zugewiesener Stellplatz
                 </p>
                 <p class="text-gray-100 mt-1">
-                  #{(@authenticated_permanent_user.spot && @authenticated_permanent_user.spot.id) ||
+                  #{(@authenticated_permanent_user.spot && @authenticated_permanent_user.spot.number) ||
                     "Keine Zuweisung"}
                 </p>
               </div>
@@ -378,7 +378,7 @@
                   <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">
                     Parkplatz
                   </p>
-                  <p class="text-gray-100 text-sm mt-1">Spot #{@ticket.spot_id}</p>
+                  <p class="text-gray-100 text-sm mt-1">Stellplatz #{@ticket.spot.number}</p>
                 </div>
 
                 <%!-- Payment Status --%>
@@ -387,7 +387,7 @@
                   if(@ticket.paid, do: "border-green-500", else: "border-red-500")
                 ]}>
                   <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                    Bezahlung Status
+                    Bezahlungsstatus
                   </p>
                   <div class="flex items-center mt-1 space-x-2">
                     <span class={[
@@ -401,10 +401,21 @@
                   </div>
                 </div>
 
+                <%= if @current_fee != nil and not @ticket.paid do %>
+                  <div class="border-l-4 border-yellow-400 pl-4">
+                    <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                      Aktueller Betrag
+                    </p>
+                    <p class="text-yellow-300 text-lg font-bold mt-1">
+                      CHF {:erlang.float_to_binary(@current_fee * 1.0, decimals: 2)}
+                    </p>
+                  </div>
+                <% end %>
+
                 <%= if @fee do %>
                   <div class="border-l-4 border-yellow-500 pl-4">
                     <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                      Betrag
+                      Bezahlter Betrag
                     </p>
                     <p class="text-yellow-300 text-lg font-bold mt-1">
                       CHF {:erlang.float_to_binary(Decimal.to_float(@fee), decimals: 2)}
@@ -427,8 +438,8 @@
             </div>
           <% else %>
             <div class="bg-gray-800 rounded-lg p-12 border border-gray-700 border-dashed text-center">
-              <p class="text-gray-400 text-lg">Keine aktive Reservierung</p>
-              <p class="text-gray-500 text-sm mt-2">Klicken Sie auf "Einfahrt" um zu beginnen</p>
+              <p class="text-gray-400 text-lg">Kein aktives Ticket</p>
+              <p class="text-gray-500 text-sm mt-2">Klicken Sie auf "Einfahrt", um zu beginnen</p>
             </div>
           <% end %>
         <% end %>

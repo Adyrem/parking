@@ -4,13 +4,8 @@
 
 Created --> Active : Einfahrt erfolgt
 Active --> Paid : Zahlung erfolgreich
-Active --> Expired : Zeit überschritten
 
-Paid --> ValidExit : Ausfahrt innerhalb Zeit
-Paid --> Expired : Zeit überschritten
-
-ValidExit --> Closed : Ausfahrt erfolgt
-Expired --> Closed : Nachbearbeitung
+Paid --> Closed : Ausfahrt erfolgt
 
 Closed --> [*]
 

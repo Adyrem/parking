@@ -11,6 +11,7 @@ System -> Payment : Zahlung anfragen
 Payment -> System : Ergebnis
 
 alt erfolgreich
+  System -> System : Austrittsticket erstellen
   System -> Nutzer : Ticket gültig
 else fehlgeschlagen
   System -> Nutzer : Zahlung wiederholen

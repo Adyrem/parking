@@ -6,8 +6,8 @@ defmodule Parking.Pricing.TimeBasedPricing do
             weekend_time_slots: nil,
             holiday_time_slots: nil,
             holidays: [],
-            daily_rate: 35.0,
-            default_rate_per_hour: 3.0
+            daily_rate: nil,
+            default_rate_per_hour: nil
 
   def calculate(%__MODULE__{} = strategy, ticket) do
     end_time = ticket.exit_time || NaiveDateTime.utc_now()

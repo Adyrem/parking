@@ -1,16 +1,16 @@
 @startuml
-actor Gelegeheitsnutzer
+actor Gelegenheitsnutzer
 participant "Parkhaus-System" as System
 participant "Ticketautomat" as Automat
 participant "Schranke" as Gate
 
-Gelegeheitsnutzer -> Automat : Knopf drücken
+Gelegenheitsnutzer -> Automat : Knopf drücken
 Automat -> System : Ticket anfordern
 System -> System : Parkplatz zuweisen
 System -> Automat : Ticket erzeugen
-Automat -> Gelegeheitsnutzer : Ticket ausgeben
+Automat -> Gelegenheitsnutzer : Ticket ausgeben
 
 Automat -> Gate : Öffnen
-Gate -> Gelegeheitsnutzer : Einfahrt
+Gate -> Gelegenheitsnutzer : Einfahrt
 
 @enduml

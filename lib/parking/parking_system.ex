@@ -9,6 +9,7 @@ defmodule Parking.ParkingSystem do
   alias Parking.Payment
   alias Parking.Users.PermanentUser
 
+  alias Parking.Settings
   alias Parking.Pricing.TimeBasedPricing
   alias Parking.Pricing.PricingStrategy
   alias Parking.Services.PaymentService
@@ -125,8 +126,8 @@ defmodule Parking.ParkingSystem do
           weekend_time_slots: pricing.config["weekend_time_slots"],
           holiday_time_slots: pricing.config["holiday_time_slots"],
           holidays: pricing.config["holidays"] || [],
-          daily_rate: pricing.config["daily_rate"] || 35.0,
-          default_rate_per_hour: pricing.config["rate_per_hour"] || 3.0
+          daily_rate: pricing.config["daily_rate"],
+          default_rate_per_hour: pricing.config["rate_per_hour"]
         }
 
         PricingStrategy.calculate(strategy, ticket)
@@ -270,18 +271,48 @@ defmodule Parking.ParkingSystem do
   end
 
   @doc "Process monthly rent payment for a permanent user"
-  def process_rent_payment(%Parking.Users.PermanentUser{} = perm_user) do
+  def process_rent_payment(%PermanentUser{} = perm_user) do
     perm_user = Repo.preload(perm_user, :spot)
 
-    paid_until = calculate_next_rent_paid_until(perm_user)
+    Repo.transaction(fn ->
+      now = DateTime.truncate(DateTime.utc_now(), :second)
+      paid_until = calculate_next_rent_paid_until(perm_user)
+      monthly_rent = parse_monthly_rent()
 
-    perm_user
-    |> Parking.Users.PermanentUser.changeset(%{
-      is_blocked: false,
-      rent_paid_until: paid_until,
-      last_rent_payment_at: DateTime.truncate(DateTime.utc_now(), :second)
-    })
-    |> Repo.update()
+      ticket =
+        Ticket.changeset(%Ticket{}, %{
+          "entry_time" => now,
+          "exit_time" => now,
+          "paid" => true,
+          "spot_id" => perm_user.spot_id,
+          "permanent_user_id" => perm_user.id
+        })
+        |> Repo.insert!()
+
+      Payment.changeset(%Payment{}, %{
+        "amount" => Decimal.from_float(monthly_rent),
+        "timestamp" => now,
+        "ticket_id" => ticket.id
+      })
+      |> Repo.insert!()
+
+      perm_user
+      |> PermanentUser.changeset(%{
+        is_blocked: false,
+        rent_paid_until: paid_until,
+        last_rent_payment_at: now
+      })
+      |> Repo.update!()
+    end)
+  end
+
+  defp parse_monthly_rent do
+    value = Settings.get("monthly_rent") || raise "monthly_rent not configured in settings"
+
+    case Float.parse(value) do
+      {amount, _} -> amount
+      :error -> raise "monthly_rent setting has invalid value: #{inspect(value)}"
+    end
   end
 
   defp calculate_next_rent_paid_until(%Parking.Users.PermanentUser{rent_paid_until: nil}) do
@@ -498,29 +529,79 @@ defmodule Parking.ParkingSystem do
         {:error, :no_spots}
 
       spot ->
-        user = Repo.insert!(%User{type: "permanent"})
-        card_uuid = Ecto.UUID.generate()
-        current_date = Date.utc_today()
+        Repo.transaction(fn ->
+          now = DateTime.truncate(DateTime.utc_now(), :second)
+          monthly_rent = parse_monthly_rent()
 
-        end_of_month = %Date{
-          year: current_date.year,
-          month: current_date.month,
-          day: Date.days_in_month(current_date)
-        }
+          user = Repo.insert!(%User{type: "permanent"})
 
-        perm_user =
-          Repo.insert!(%PermanentUser{
-            id: user.id,
-            access_code: card_uuid,
-            is_blocked: false,
-            spot_id: spot.id,
-            name: name,
-            rent_paid_until: end_of_month,
-            last_rent_payment_at: DateTime.truncate(DateTime.utc_now(), :second)
+          perm_user =
+            Repo.insert!(%PermanentUser{
+              id: user.id,
+              access_code: Ecto.UUID.generate(),
+              is_blocked: false,
+              spot_id: spot.id,
+              name: name
+            })
+
+          ticket =
+            Ticket.changeset(%Ticket{}, %{
+              "entry_time" => now,
+              "exit_time" => now,
+              "paid" => true,
+              "spot_id" => spot.id,
+              "permanent_user_id" => perm_user.id
+            })
+            |> Repo.insert!()
+
+          Payment.changeset(%Payment{}, %{
+            "amount" => Decimal.from_float(monthly_rent),
+            "timestamp" => now,
+            "ticket_id" => ticket.id
           })
+          |> Repo.insert!()
 
-        {:ok, perm_user}
+          perm_user
+          |> PermanentUser.changeset(%{
+            rent_paid_until: end_of_month(Date.utc_today()),
+            last_rent_payment_at: now
+          })
+          |> Repo.update!()
+        end)
     end
+  end
+
+  @doc "List spots in a garage not reserved by any permanent user and not occupied by a guest"
+  def list_unassigned_spots(garage_id) do
+    from(s in ParkingSpot,
+      join: l in Level,
+      on: s.level_id == l.id,
+      where:
+        l.garage_id == ^garage_id and
+          not s.is_occupied and
+          s.id not in subquery(
+            from p in PermanentUser, where: not is_nil(p.spot_id), select: p.spot_id
+          ),
+      order_by: [asc: s.id]
+    )
+    |> Repo.all()
+  end
+
+  @doc "Reassign a permanent user to a different spot (only when not currently parked)"
+  def assign_spot(%PermanentUser{} = perm_user, spot_id) when is_integer(spot_id) do
+    perm_user
+    |> PermanentUser.changeset(%{spot_id: spot_id})
+    |> Repo.update()
+  end
+
+  @doc "Get the active pricing configuration for a garage"
+  def get_garage_pricing(garage_id) do
+    Repo.one(
+      from p in Parking.Pricing,
+        where: p.garage_id == ^garage_id,
+        order_by: [asc: p.id],
+        limit: 1
+    )
   end
 
   @doc "Find a ticket by UUID for display purposes"

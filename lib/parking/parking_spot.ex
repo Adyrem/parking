@@ -4,6 +4,7 @@ defmodule Parking.ParkingSpot do
   import Ecto.Changeset
 
   schema "parking_spot" do
+    field :number, :integer
     field :is_occupied, :boolean, default: false
     belongs_to :level, Parking.Level, foreign_key: :level_id
     has_many :tickets, Parking.Ticket, foreign_key: :spot_id
@@ -13,8 +14,8 @@ defmodule Parking.ParkingSpot do
 
   def changeset(spot, attrs) do
     spot
-    |> cast(attrs, [:is_occupied, :level_id])
-    |> validate_required([:level_id])
+    |> cast(attrs, [:number, :is_occupied, :level_id])
+    |> validate_required([:number, :level_id])
     |> assoc_constraint(:level)
   end
 

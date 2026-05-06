@@ -1,16 +1,27 @@
 @startuml
-actor Nutzer
+actor Gelegenheitsnutzer
+actor Dauermieter
 participant "Parkhaus-System" as System
 participant "Schranke" as Gate
 
-Nutzer -> System : Ticket scannen
+Gelegenheitsnutzer -> System : Ticket scannen
 System -> System : Ticket prüfen
 
 alt gültig
   System -> Gate : Öffnen
-  Gate -> Nutzer : Ausfahrt
+  Gate -> Gelegenheitsnutzer : Ausfahrt
 else ungültig
-  System -> Nutzer : Ausfahrt verweigert
+  System -> Gelegenheitsnutzer : Ausfahrt verweigert
+end
+
+Dauermieter -> System : Code eingeben
+System -> System : Code prüfen
+
+alt gültig
+  System -> Gate : Öffnen
+  Gate -> Dauermieter : Ausfahrt
+else ungültig
+  System -> Dauermieter : Ausfahrt verweigert
 end
 
 @enduml

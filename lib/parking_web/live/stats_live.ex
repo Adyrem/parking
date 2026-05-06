@@ -7,6 +7,7 @@ defmodule ParkingWeb.StatsLive do
   alias Parking.ParkingSystem
   alias Parking.ParkingGarage
   alias Parking.Services.StatisticsService
+  alias Parking.Settings
 
   def mount(params, _session, socket) do
     # Get garage_id from params or default to first garage
@@ -67,10 +68,18 @@ defmodule ParkingWeb.StatsLive do
   defp assign_stats(socket, garage) do
     current_date = Date.utc_today()
 
+    monthly_rent_rate =
+      case Float.parse(Settings.get("monthly_rent") || "") do
+        {amount, _} -> amount
+        :error -> nil
+      end
+
     assign(socket,
       garage: garage,
       garage_id: garage.id,
       stats: ParkingSystem.get_garage_stats(garage.id),
+      pricing: ParkingSystem.get_garage_pricing(garage.id),
+      monthly_rent_rate: monthly_rent_rate,
       monthly_revenue:
         StatisticsService.calculate_monthly_revenue(
           current_date.year,
@@ -87,5 +96,12 @@ defmodule ParkingWeb.StatsLive do
 
   def format_chf(amount) do
     format_chf(amount * 1.0)
+  end
+
+  def current_ticket_fee(nil), do: nil
+  def current_ticket_fee(%{permanent_user_id: id}) when not is_nil(id), do: nil
+
+  def current_ticket_fee(ticket) do
+    ParkingSystem.calculate_fee(ticket)
   end
 end

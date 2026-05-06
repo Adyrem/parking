@@ -26,6 +26,7 @@ defmodule ParkingWeb.ParkingLive do
            garages: Repo.all(ParkingGarage),
            ticket: nil,
            fee: nil,
+           current_fee: nil,
            message: nil,
            authenticated_permanent_user: nil
          )
@@ -51,6 +52,7 @@ defmodule ParkingWeb.ParkingLive do
          assign(socket,
            ticket: ticket,
            fee: nil,
+           current_fee: ParkingSystem.calculate_fee(ticket),
            message: "Einfahrt erfolgreich",
            stats: ParkingSystem.get_garage_stats(socket.assigns.garage_id),
            parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
@@ -81,6 +83,7 @@ defmodule ParkingWeb.ParkingLive do
              assign(socket,
                ticket: updated_ticket,
                fee: fee,
+               current_fee: nil,
                message: "Bezahlung erfolgreich",
                stats: ParkingSystem.get_garage_stats(socket.assigns.garage_id),
                parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
@@ -126,6 +129,7 @@ defmodule ParkingWeb.ParkingLive do
          assign(socket,
            ticket: ticket,
            fee: nil,
+           current_fee: ParkingSystem.calculate_fee(ticket),
            message: "Ticket #{String.slice(uuid, 0..7)}... geladen"
          )}
     end
@@ -143,7 +147,7 @@ defmodule ParkingWeb.ParkingLive do
             {:noreply,
              assign(socket,
                authenticated_permanent_user: updated_user,
-               message: "Einfahrt für permanenten Benutzer registriert",
+               message: "Einfahrt für Dauerparker registriert",
                stats: ParkingSystem.get_garage_stats(socket.assigns.garage_id),
                parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
              )}
@@ -183,7 +187,7 @@ defmodule ParkingWeb.ParkingLive do
             {:noreply,
              assign(socket,
                authenticated_permanent_user: updated_user,
-               message: "Ausfahrt für permanenten Benutzer registriert",
+               message: "Ausfahrt für Dauerparker registriert",
                stats: ParkingSystem.get_garage_stats(socket.assigns.garage_id),
                parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
              )}
@@ -230,7 +234,7 @@ defmodule ParkingWeb.ParkingLive do
 
   defp assign_garage(socket, garage) do
     pricing =
-      Repo.one(from p in Parking.Pricing, where: p.garage_id == ^garage.id, limit: 1) ||
+      ParkingSystem.get_garage_pricing(garage.id) ||
         raise "No pricing configured for this garage"
 
     assign(socket,
@@ -253,7 +257,13 @@ defmodule ParkingWeb.ParkingLive do
       garage ->
         {:noreply,
          socket
-         |> assign(authenticated_permanent_user: nil, ticket: nil, fee: nil, message: nil)
+         |> assign(
+           authenticated_permanent_user: nil,
+           ticket: nil,
+           fee: nil,
+           current_fee: nil,
+           message: nil
+         )
          |> assign_garage(garage)}
     end
   end

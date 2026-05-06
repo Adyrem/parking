@@ -79,7 +79,7 @@ Stellt ein Stockwerk innerhalb eines Parkhauses mit Stockwerknummer und Parkplat
 
 *Parking.ParkingSpot*
 
-Entspricht einem einzelnen Parkplatz und hält dessen Belegungsstatus.
+Entspricht einem einzelnen Parkplatz und hält dessen Belegungsstatus. Im Konzept war ein dreistufiger Lebenszyklus (frei, reserviert, belegt) vorgesehen. In der Umsetzung wurde dieser auf einen booleschen Belegungsstatus (`is_occupied`) vereinfacht, da eine explizite Reservierungsphase im Prototyp nicht benötigt wird: Die Zuweisung und Belegung eines Parkplatzes erfolgt atomisch beim Erstellen des Tickets.
 
 *Parking.Ticket*
 
@@ -96,6 +96,8 @@ Enthält die Tarif-Konfiguration eines Parkhauses, den Typ (`time_based` oder `f
 *Parking.Users.PermanentUser*
 
 Repräsentiert den Dauermieter mit Zugangscode, Sperrstatus, Mietdaten und einem fixen Parkplatz.
+
+Im Unterschied zum Konzept existiert keine eigene Entität für Gelegenheitsnutzer. Da keine dauerhaften Nutzerdaten für Gelegenheitsnutzer gespeichert werden, ist eine separate Entität nicht notwendig. Der Parkvorgang wird vollständig über das Ticket abgebildet.
 
 === Preisberechnungsstrategie
 
@@ -204,7 +206,7 @@ Die Persistenz erfolgt über eine relationale PostgreSQL-Datenbank. Das Schema w
 )
 
 #figure(
-  image("../diagrams/ERD_Realisierung.png", width: 100%),
+  image("../diagrams/ERD_Realisierung.png", width: 70%),
   caption: [Entity-Relationship-Diagramm]
 )
 

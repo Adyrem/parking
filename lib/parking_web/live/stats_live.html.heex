@@ -76,7 +76,7 @@
               CHF {format_chf(@monthly_revenue.total)}
             </p>
             <div class="text-sm text-gray-400 mt-1">
-              Gast: CHF {format_chf(@monthly_revenue.guest)} | Dauerparkplatz: CHF {format_chf(
+              Gast: CHF {format_chf(@monthly_revenue.guest)} | Dauermiete: CHF {format_chf(
                 @monthly_revenue.permanent
               )}
             </div>
@@ -111,6 +111,63 @@
           </div>
         </div>
       <% end %>
+      <%!-- Tariff Overview --%>
+      <%= if @pricing do %>
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <p class="text-gray-400 text-sm font-semibold uppercase mb-4">Tarifübersicht</p>
+          <%= if @pricing.type == "time_based" do %>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <%= if @pricing.config["time_slots"] do %>
+                <div>
+                  <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">Wochentage</p>
+                  <div class="space-y-1">
+                    <%= for slot <- @pricing.config["time_slots"] do %>
+                      <div class="flex justify-between text-sm">
+                        <span class="text-gray-300">{slot["from"]} – {slot["to"]}</span>
+                        <span class="text-green-400 font-medium">
+                          CHF {format_chf(slot["rate_per_hour"])}/h
+                        </span>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+              <%= if @pricing.config["weekend_time_slots"] do %>
+                <div>
+                  <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">
+                    Wochenende &amp; Feiertage
+                  </p>
+                  <div class="space-y-1">
+                    <%= for slot <- @pricing.config["weekend_time_slots"] do %>
+                      <div class="flex justify-between text-sm">
+                        <span class="text-gray-300">{slot["from"]} – {slot["to"]}</span>
+                        <span class="text-green-400 font-medium">
+                          CHF {format_chf(slot["rate_per_hour"])}/h
+                        </span>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+            <%= if @pricing.config["daily_rate"] do %>
+              <div class="border-t border-gray-700 mt-4 pt-4 flex justify-between text-sm">
+                <span class="text-gray-300">Tagespauschale (ab 24 Stunden)</span>
+                <span class="text-yellow-400 font-medium">
+                  CHF {format_chf(@pricing.config["daily_rate"])}/Tag
+                </span>
+              </div>
+            <% end %>
+          <% end %>
+          <%= if @monthly_rent_rate do %>
+            <div class="border-t border-gray-700 mt-4 pt-4 flex justify-between text-sm">
+              <span class="text-gray-300">Dauermiete (monatlich)</span>
+              <span class="text-sky-400 font-medium">CHF {format_chf(@monthly_rent_rate)}/Monat</span>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+
       <%!-- Occupancy Progress Bar --%>
       <div class={[
         "rounded-lg p-6 border",
@@ -248,21 +305,21 @@
                         title={
                           cond do
                             spot_type == :permanent and spot.is_occupied ->
-                              "Platz ##{spot.id} - Dauerparkplatz belegt"
+                              "Platz ##{spot.number} - Dauerparkplatz belegt"
 
                             spot_type == :permanent ->
-                              "Platz ##{spot.id} - Reservierter Dauerparkplatz"
+                              "Platz ##{spot.number} - Reservierter Dauerparkplatz"
 
                             active_ticket ->
-                              "Platz ##{spot.id} - Belegt"
+                              "Platz ##{spot.number} - Belegt"
 
                             true ->
-                              "Platz ##{spot.id} - Frei"
+                              "Platz ##{spot.number} - Frei"
                           end
                         }
                       >
                         <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.12em]">
-                          <span>Platz #{spot.id}</span>
+                          <span>Platz #{spot.number}</span>
                           <span>
                             <%= if spot_type == :permanent and spot.is_occupied do %>
                               P
@@ -313,7 +370,7 @@
                         <div class="p-4">
                           <div class="flex items-center justify-between mb-3">
                             <h4 class="text-base font-semibold text-gray-100">
-                              Platz ##{spot.id}
+                              Platz ##{spot.number}
                             </h4>
                             <button
                               phx-click={JS.hide(to: "#spot-details-#{spot.id}")}
@@ -327,9 +384,26 @@
                             <div class="flex items-center justify-between">
                               <span>Status</span>
                               <span class={
-                                if(spot.is_occupied, do: "text-red-300", else: "text-emerald-300")
+                                cond do
+                                  spot_type == :permanent and spot.is_occupied -> "text-violet-300"
+                                  spot_type == :permanent -> "text-sky-300"
+                                  spot.is_occupied -> "text-red-300"
+                                  true -> "text-emerald-300"
+                                end
                               }>
-                                {if spot.is_occupied, do: "Belegt", else: "Frei"}
+                                {cond do
+                                  spot_type == :permanent and spot.is_occupied ->
+                                    "Dauerparker eingeparkt"
+
+                                  spot_type == :permanent ->
+                                    "Reserviert"
+
+                                  spot.is_occupied ->
+                                    "Belegt"
+
+                                  true ->
+                                    "Frei"
+                                end}
                               </span>
                             </div>
                             <div class="border-t border-gray-700 pt-3">
@@ -337,17 +411,48 @@
                                 Platzdetails
                               </p>
                               <p class="text-gray-200">
-                                {if active_ticket,
-                                  do: "Aktuell belegt mit aktivem Ticket",
-                                  else: "Bereit zum Einparken"}
+                                {cond do
+                                  spot_type == :permanent and spot.is_occupied ->
+                                    "Dauerparkplatz – Fahrzeug eingeparkt"
+
+                                  spot_type == :permanent ->
+                                    "Dauerparkplatz – Fahrzeug nicht eingeparkt"
+
+                                  spot.is_occupied ->
+                                    "Gästeplatz – Fahrzeug eingeparkt"
+
+                                  true ->
+                                    "Gästeplatz – bereit zum Einparken"
+                                end}
                               </p>
                             </div>
                             <%= if active_ticket do %>
                               <div class="border-t border-gray-700 pt-3">
                                 <p class="text-xs text-gray-500 uppercase tracking-[0.2em] mb-2">
+                                  Einfahrtszeit
+                                </p>
+                                <p class="text-gray-200">
+                                  {Calendar.strftime(active_ticket.entry_time, "%d.%m.%Y %H:%M")}
+                                </p>
+                              </div>
+                              <% fee = current_ticket_fee(active_ticket) %>
+                              <%= if fee != nil do %>
+                                <div class="border-t border-gray-700 pt-3">
+                                  <p class="text-xs text-gray-500 uppercase tracking-[0.2em] mb-2">
+                                    Aktueller Betrag
+                                  </p>
+                                  <p class="text-yellow-300 font-bold">
+                                    CHF {:erlang.float_to_binary(fee * 1.0, decimals: 2)}
+                                  </p>
+                                </div>
+                              <% end %>
+                              <div class="border-t border-gray-700 pt-3">
+                                <p class="text-xs text-gray-500 uppercase tracking-[0.2em] mb-2">
                                   Ticket ID
                                 </p>
-                                <p class="text-gray-200 break-all">{active_ticket.id}</p>
+                                <p class="text-gray-200 font-mono text-xs break-all">
+                                  {active_ticket.id}
+                                </p>
                               </div>
                             <% end %>
                           </div>

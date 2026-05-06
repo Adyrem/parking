@@ -108,8 +108,8 @@ Central entry point for system logic
 end note
 
 note bottom of ParkingSpot
-Simple allocation algorithm:
-first available spot
+Allocation algorithm:
+balanced distribution across floors
 end note
 
 @enduml
