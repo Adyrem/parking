@@ -157,34 +157,34 @@
       <%= if @pricing do %>
         <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
           <p class="text-gray-400 text-sm font-semibold uppercase mb-4">Tarifübersicht</p>
-          <%= if @pricing.type == "time_based" do %>
+          <%= if @pricing && @pricing.type == "time_based" do %>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <%= if @pricing.config["time_slots"] do %>
+              <%= if @weekday_slots != [] do %>
                 <div>
                   <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">Wochentage</p>
                   <div class="space-y-1">
-                    <%= for slot <- @pricing.config["time_slots"] do %>
+                    <%= for slot <- @weekday_slots do %>
                       <div class="flex justify-between text-sm">
-                        <span class="text-gray-300">{slot["from"]} – {slot["to"]}</span>
+                        <span class="text-gray-300">{slot.from_time} – {slot.to_time}</span>
                         <span class="text-green-400 font-medium">
-                          CHF {format_chf(slot["rate_per_hour"])}/h
+                          CHF {format_chf(slot.rate_per_hour)}/h
                         </span>
                       </div>
                     <% end %>
                   </div>
                 </div>
               <% end %>
-              <%= if @pricing.config["weekend_time_slots"] do %>
+              <%= if @weekend_slots != [] do %>
                 <div>
                   <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">
                     Wochenende &amp; Feiertage
                   </p>
                   <div class="space-y-1">
-                    <%= for slot <- @pricing.config["weekend_time_slots"] do %>
+                    <%= for slot <- @weekend_slots do %>
                       <div class="flex justify-between text-sm">
-                        <span class="text-gray-300">{slot["from"]} – {slot["to"]}</span>
+                        <span class="text-gray-300">{slot.from_time} – {slot.to_time}</span>
                         <span class="text-green-400 font-medium">
-                          CHF {format_chf(slot["rate_per_hour"])}/h
+                          CHF {format_chf(slot.rate_per_hour)}/h
                         </span>
                       </div>
                     <% end %>
@@ -192,11 +192,11 @@
                 </div>
               <% end %>
             </div>
-            <%= if @pricing.config["daily_rate"] do %>
+            <%= if @daily_rate do %>
               <div class="border-t border-gray-700 mt-4 pt-4 flex justify-between text-sm">
                 <span class="text-gray-300">Tagespauschale (ab 24 Stunden)</span>
                 <span class="text-yellow-400 font-medium">
-                  CHF {format_chf(@pricing.config["daily_rate"])}/Tag
+                  CHF {format_chf(@daily_rate)}/Tag
                 </span>
               </div>
             <% end %>

@@ -5,6 +5,7 @@ defmodule Parking.Services.StatisticsServiceTest do
   alias Parking.Repo
   alias Parking.ParkingGarage
   alias Parking.Pricing
+  alias Parking.Pricing.TimeBasedConfig
   alias Parking.Ticket
   alias Parking.Payment
   alias Parking.Level
@@ -16,12 +17,8 @@ defmodule Parking.Services.StatisticsServiceTest do
       {:ok, garage} = Repo.insert(%ParkingGarage{name: "Test Garage"})
 
       # Create pricing
-      {:ok, pricing} =
-        Repo.insert(%Pricing{
-          garage_id: garage.id,
-          type: "time_based",
-          config: %{"base_rate" => 2.0}
-        })
+      pricing = Repo.insert!(%Pricing{garage_id: garage.id, type: "time_based"})
+      Repo.insert!(%TimeBasedConfig{pricing_id: pricing.id, rate_per_hour: 2.0})
 
       # Create level and spots
       level = Repo.insert!(%Level{number: 1, garage_id: garage.id})

@@ -5,10 +5,34 @@ defmodule Parking.ParkingSystemTest do
   alias Parking.Repo
   alias Parking.ParkingGarage
   alias Parking.Pricing
+  alias Parking.Pricing.TimeBasedConfig
+  alias Parking.Pricing.DailyRateConfig
+  alias Parking.Pricing.MonthlyRentConfig
   alias Parking.Ticket
   alias Parking.ParkingSpot
   alias Parking.Level
   alias Parking.Users.PermanentUser
+
+  defp insert_time_based_pricing(garage_id) do
+    pricing = Repo.insert!(%Pricing{garage_id: garage_id, type: "time_based"})
+    Repo.insert!(%TimeBasedConfig{pricing_id: pricing.id, rate_per_hour: 3.0})
+
+    daily = Repo.insert!(%Pricing{garage_id: garage_id, type: "daily_rate"})
+    Repo.insert!(%DailyRateConfig{pricing_id: daily.id, daily_rate: 35.0})
+
+    pricing
+  end
+
+  defp insert_monthly_rent_pricing(garage_id, monthly_rent) do
+    pricing = Repo.insert!(%Pricing{garage_id: garage_id, type: "monthly_rent"})
+
+    Repo.insert!(%MonthlyRentConfig{
+      pricing_id: pricing.id,
+      monthly_rent: monthly_rent
+    })
+
+    pricing
+  end
 
   describe "guest parking workflow" do
     setup do
@@ -20,16 +44,7 @@ defmodule Parking.ParkingSystemTest do
       spot1 = Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
       spot2 = Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
 
-      # Create pricing
-      {:ok, pricing} =
-        Repo.insert(%Pricing{
-          garage_id: garage.id,
-          type: "time_based",
-          config: %{
-            "rate_per_hour" => 3.0,
-            "daily_rate" => 35.0
-          }
-        })
+      pricing = insert_time_based_pricing(garage.id)
 
       %{garage: garage, pricing: pricing, spots: [spot1, spot2]}
     end
@@ -109,12 +124,7 @@ defmodule Parking.ParkingSystemTest do
       level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
       Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
 
-      {:ok, pricing} =
-        Repo.insert(%Pricing{
-          garage_id: garage.id,
-          type: "time_based",
-          config: %{"daily_rate" => 35.0, "rate_per_hour" => 3.0}
-        })
+      pricing = insert_time_based_pricing(garage.id)
 
       Application.put_env(:parking, :payment_service, Parking.Services.PaymentService.FailingStub)
       on_exit(fn -> Application.delete_env(:parking, :payment_service) end)
@@ -210,6 +220,38 @@ defmodule Parking.ParkingSystemTest do
     end
   end
 
+  describe "permanent user creation" do
+    test "returns error when no free spots are available" do
+      {:ok, garage} = Repo.insert(%ParkingGarage{name: "Full Garage"})
+      level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
+      spot = Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
+
+      # Reserve the only spot for an existing permanent user
+      {:ok, user} = Repo.insert(%Parking.Users.User{type: "permanent"})
+
+      Repo.insert!(%PermanentUser{
+        id: user.id,
+        name: "Existing User",
+        access_code: Ecto.UUID.generate(),
+        is_blocked: false,
+        spot_id: spot.id
+      })
+
+      assert {:error, :no_spots} = ParkingSystem.create_permanent_user(garage.id, "New User")
+    end
+
+    test "creates permanent user with monthly rent from pricing sub-table" do
+      {:ok, garage} = Repo.insert(%ParkingGarage{name: "Test Garage"})
+      level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
+      Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
+      insert_monthly_rent_pricing(garage.id, 100.0)
+
+      assert {:ok, perm_user} = ParkingSystem.create_permanent_user(garage.id, "New User")
+      assert perm_user.name == "New User"
+      assert perm_user.rent_paid_until
+    end
+  end
+
   describe "balanced spot assignment" do
     setup do
       {:ok, garage} = Repo.insert(%ParkingGarage{name: "Test Garage"})
@@ -225,12 +267,7 @@ defmodule Parking.ParkingSystemTest do
         Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level2.id})
       end)
 
-      {:ok, pricing} =
-        Repo.insert(%Pricing{
-          garage_id: garage.id,
-          type: "time_based",
-          config: %{"daily_rate" => 35.0, "rate_per_hour" => 3.0}
-        })
+      pricing = insert_time_based_pricing(garage.id)
 
       %{garage: garage, level1: level1, level2: level2, pricing: pricing}
     end
@@ -303,12 +340,7 @@ defmodule Parking.ParkingSystemTest do
         })
       end)
 
-      {:ok, pricing} =
-        Repo.insert(%Pricing{
-          garage_id: garage.id,
-          type: "time_based",
-          config: %{"daily_rate" => 35.0, "rate_per_hour" => 3.0}
-        })
+      pricing = insert_time_based_pricing(garage.id)
 
       %{garage: garage, level1: level1, level2: level2, pricing: pricing}
     end

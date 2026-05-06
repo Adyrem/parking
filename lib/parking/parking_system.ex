@@ -9,9 +9,10 @@ defmodule Parking.ParkingSystem do
   alias Parking.Payment
   alias Parking.Users.PermanentUser
 
-  alias Parking.Settings
   alias Parking.Pricing.TimeBasedPricing
   alias Parking.Pricing.PricingStrategy
+  alias Parking.Pricing.MonthlyRentConfig
+  alias Parking.Pricing.DailyRateConfig
   alias Parking.Services.PaymentService
   alias Parking.Services.AccountingService
   alias Parking.Users.User
@@ -107,7 +108,11 @@ defmodule Parking.ParkingSystem do
 
   @doc "Calculate fee for a ticket based on pricing strategy"
   def calculate_fee(ticket) do
-    ticket = Repo.preload(ticket, [:pricing, :permanent_user])
+    ticket =
+      Repo.preload(ticket, [
+        pricing: [:time_based_config, :daily_rate_config, :time_slots, :holidays],
+        permanent_user: []
+      ])
 
     if ticket.permanent_user_id do
       0.0
@@ -121,27 +126,60 @@ defmodule Parking.ParkingSystem do
   defp recreate_strategy_and_calculate(pricing, ticket) do
     case pricing.type do
       "time_based" ->
-        strategy = %TimeBasedPricing{
-          time_slots: pricing.config["time_slots"],
-          weekend_time_slots: pricing.config["weekend_time_slots"],
-          holiday_time_slots: pricing.config["holiday_time_slots"],
-          holidays: pricing.config["holidays"] || [],
-          daily_rate: pricing.config["daily_rate"],
-          default_rate_per_hour: pricing.config["rate_per_hour"]
-        }
+        case pricing.time_based_config do
+          nil ->
+            0.0
 
-        PricingStrategy.calculate(strategy, ticket)
+          config ->
+            daily_rate = get_garage_daily_rate(pricing.garage_id)
 
-      "flat_rate" ->
-        strategy = %Parking.Pricing.FlatRatePricing{
-          daily_rate: pricing.config["daily_rate"]
-        }
+            strategy = %TimeBasedPricing{
+              time_slots: build_slots(pricing.time_slots, "weekday"),
+              weekend_time_slots: build_slots(pricing.time_slots, "weekend"),
+              holiday_time_slots: build_slots(pricing.time_slots, "holiday"),
+              holidays: Enum.map(pricing.holidays, &Date.to_iso8601(&1.date)),
+              daily_rate: daily_rate,
+              default_rate_per_hour: config.rate_per_hour
+            }
 
-        PricingStrategy.calculate(strategy, ticket)
+            PricingStrategy.calculate(strategy, ticket)
+        end
+
+      "daily_rate" ->
+        case pricing.daily_rate_config do
+          nil ->
+            0.0
+
+          config ->
+            strategy = %Parking.Pricing.FlatRatePricing{daily_rate: config.daily_rate}
+            PricingStrategy.calculate(strategy, ticket)
+        end
 
       _ ->
         0.0
     end
+  end
+
+  defp build_slots(time_slots, slot_type) do
+    result =
+      time_slots
+      |> Enum.filter(&(&1.slot_type == slot_type))
+      |> Enum.map(fn slot ->
+        %{"from" => slot.from_time, "to" => slot.to_time, "rate_per_hour" => slot.rate_per_hour}
+      end)
+
+    if result == [], do: nil, else: result
+  end
+
+  defp get_garage_daily_rate(garage_id) do
+    Repo.one(
+      from p in Parking.Pricing,
+        join: c in DailyRateConfig,
+        on: c.pricing_id == p.id,
+        where: p.garage_id == ^garage_id and p.type == "daily_rate",
+        select: c.daily_rate,
+        limit: 1
+    )
   end
 
   @doc "Process payment for a ticket - updates ticket and creates payment record"
@@ -272,12 +310,13 @@ defmodule Parking.ParkingSystem do
 
   @doc "Process monthly rent payment for a permanent user"
   def process_rent_payment(%PermanentUser{} = perm_user) do
-    perm_user = Repo.preload(perm_user, :spot)
+    perm_user = Repo.preload(perm_user, spot: :level)
+    garage_id = perm_user.spot.level.garage_id
 
     Repo.transaction(fn ->
       now = DateTime.truncate(DateTime.utc_now(), :second)
       paid_until = calculate_next_rent_paid_until(perm_user)
-      monthly_rent = parse_monthly_rent()
+      monthly_rent = parse_monthly_rent(garage_id)
 
       ticket =
         Ticket.changeset(%Ticket{}, %{
@@ -306,13 +345,18 @@ defmodule Parking.ParkingSystem do
     end)
   end
 
-  defp parse_monthly_rent do
-    value = Settings.get("monthly_rent") || raise "monthly_rent not configured in settings"
+  defp parse_monthly_rent(garage_id) do
+    result =
+      Repo.one(
+        from p in Parking.Pricing,
+          join: c in MonthlyRentConfig,
+          on: c.pricing_id == p.id,
+          where: p.garage_id == ^garage_id and p.type == "monthly_rent",
+          select: c.monthly_rent,
+          limit: 1
+      )
 
-    case Float.parse(value) do
-      {amount, _} -> amount
-      :error -> raise "monthly_rent setting has invalid value: #{inspect(value)}"
-    end
+    result || raise "monthly_rent not configured for garage #{garage_id}"
   end
 
   defp calculate_next_rent_paid_until(%Parking.Users.PermanentUser{rent_paid_until: nil}) do
@@ -531,7 +575,7 @@ defmodule Parking.ParkingSystem do
       spot ->
         Repo.transaction(fn ->
           now = DateTime.truncate(DateTime.utc_now(), :second)
-          monthly_rent = parse_monthly_rent()
+          monthly_rent = parse_monthly_rent(garage_id)
 
           user = Repo.insert!(%User{type: "permanent"})
 
@@ -594,11 +638,12 @@ defmodule Parking.ParkingSystem do
     |> Repo.update()
   end
 
-  @doc "Get the active pricing configuration for a garage"
+  @doc "Get the active time-based pricing configuration for a garage"
   def get_garage_pricing(garage_id) do
     Repo.one(
       from p in Parking.Pricing,
-        where: p.garage_id == ^garage_id,
+        where: p.garage_id == ^garage_id and p.type == "time_based",
+        preload: [:time_based_config, :time_slots, :holidays],
         order_by: [asc: p.id],
         limit: 1
     )

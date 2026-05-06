@@ -7,7 +7,9 @@ defmodule ParkingWeb.StatsLive do
   alias Parking.ParkingSystem
   alias Parking.ParkingGarage
   alias Parking.Services.StatisticsService
-  alias Parking.Settings
+  alias Parking.Pricing
+  alias Parking.Pricing.MonthlyRentConfig
+  alias Parking.Pricing.DailyRateConfig
 
   def mount(params, _session, socket) do
     # Get garage_id from params or default to first garage
@@ -68,17 +70,42 @@ defmodule ParkingWeb.StatsLive do
   defp assign_stats(socket, garage) do
     current_date = Date.utc_today()
 
+    pricing = ParkingSystem.get_garage_pricing(garage.id)
+
     monthly_rent_rate =
-      case Float.parse(Settings.get("monthly_rent") || "") do
-        {amount, _} -> amount
-        :error -> nil
-      end
+      Repo.one(
+        from p in Pricing,
+          join: c in MonthlyRentConfig,
+          on: c.pricing_id == p.id,
+          where: p.garage_id == ^garage.id and p.type == "monthly_rent",
+          select: c.monthly_rent,
+          limit: 1
+      )
+
+    daily_rate =
+      Repo.one(
+        from p in Pricing,
+          join: c in DailyRateConfig,
+          on: c.pricing_id == p.id,
+          where: p.garage_id == ^garage.id and p.type == "daily_rate",
+          select: c.daily_rate,
+          limit: 1
+      )
+
+    weekday_slots =
+      if pricing, do: Enum.filter(pricing.time_slots, &(&1.slot_type == "weekday")), else: []
+
+    weekend_slots =
+      if pricing, do: Enum.filter(pricing.time_slots, &(&1.slot_type == "weekend")), else: []
 
     assign(socket,
       garage: garage,
       garage_id: garage.id,
       stats: ParkingSystem.get_garage_stats(garage.id),
-      pricing: ParkingSystem.get_garage_pricing(garage.id),
+      pricing: pricing,
+      weekday_slots: weekday_slots,
+      weekend_slots: weekend_slots,
+      daily_rate: daily_rate,
       monthly_rent_rate: monthly_rent_rate,
       monthly_revenue:
         StatisticsService.calculate_monthly_revenue(

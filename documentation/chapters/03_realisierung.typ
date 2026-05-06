@@ -79,7 +79,7 @@ Stellt ein Stockwerk innerhalb eines Parkhauses mit Stockwerknummer und Parkplat
 
 *Parking.ParkingSpot*
 
-Entspricht einem einzelnen Parkplatz und hält dessen Belegungsstatus. Im Konzept war ein dreistufiger Lebenszyklus (frei, reserviert, belegt) vorgesehen. In der Umsetzung wurde dieser auf den boolean Wert Belegungsstatus (`is_occupied`) vereinfacht, da eine explizite Reservierungsphase im Prototyp nicht benötigt wird. Die Zuweisung und Belegung eines Parkplatzes erfolgt beim Erstellen des Tickets.
+Entspricht einem einzelnen Parkplatz und hält dessen Belegungsstatus sowie eine lesbare Platznummer (`number`). Die Platznummer wird nach dem Schema Stockwerknummer × 100 + laufende Nummer vergeben, sodass Platz 3 auf Stockwerk 2 die Nummer 203 trägt. Im Konzept war ein dreistufiger Lebenszyklus (frei, reserviert, belegt) vorgesehen. In der Umsetzung wurde dieser auf den boolean Wert Belegungsstatus (`is_occupied`) vereinfacht, da eine explizite Reservierungsphase im Prototyp nicht benötigt wird. Die Zuweisung und Belegung eines Parkplatzes erfolgt beim Erstellen des Tickets.
 
 *Parking.Ticket*
 
@@ -91,19 +91,19 @@ Speichert Zahlungsdatensätze mit Betrag und Zeitstempel.
 
 *Parking.Pricing*
 
-Enthält die Tarif-Konfiguration eines Parkhauses, den Typ (`time_based` oder `flat_rate`) und die gesamte Konfiguration werden als JSON-Map gespeichert.
+Enthält den Tarif-Typ eines Parkhauses und verknüpft die zugehörige Konfiguration über typisierte Untertabellen. Unterstützte Typen sind `time_based`, `daily_rate` und `monthly_rent`. Die Konfigurationsdetails werden in separaten Tabellen (`time_based_pricing`, `daily_rate_pricing`, `monthly_rent_pricing`) gespeichert, die jeweils nur die für den jeweiligen Typ relevanten Felder enthalten. Die Monatsmiete ist damit pro Parkhaus konfigurierbar.
 
 *Parking.Users.PermanentUser*
 
 Repräsentiert den Dauermieter mit Zugangscode, Sperrstatus, Mietdaten und einem fixen Parkplatz.
 
-Im Unterschied zum Konzept existiert keine eigene Entität für Gelegenheitsnutzer. Da keine dauerhaften Nutzerdaten für Gelegenheitsnutzer gespeichert werden, ist eine separate Entität nicht notwendig. Der Parkvorgang wird vollständig über das Ticket abgebildet.
+Die Entität `Parking.Users.OccasionalUser` existiert als Ecto-Schema zur Vervollständigung des Datenmodells, enthält jedoch ausser der ID-Verknüpfung zur `User`-Tabelle keine weiteren Felder. Bei der Einfahrt eines Gelegenheitsnutzers wird kein `OccasionalUser`-Datensatz angelegt — der Parkvorgang wird vollständig über das Ticket abgebildet.
 
 === Preisberechnungsstrategie
 
 Die Gebührenberechnung ist über ein Elixir-Behaviour (`Parking.Pricing.PricingStrategy`) abstrahiert. Dieses definiert die Schnittstelle `calculate/2`, welche eine Strategie-Struktur und ein Ticket entgegennimmt und den geschuldeten Betrag zurückgibt.
 
-`Parking.Pricing.TimeBasedPricing` berechnet die Gebühr anhand der Parkdauer und konfigurierbarer Zeitslots. Die Abrechnung erfolgt auf Viertelstundenbasis, wobei der zu Beginn der jeweiligen Viertelstunde geltende Tarif für die gesamte Viertelstunde gilt. Für Wochenenden und Feiertage können separate Zeitslot-Listen konfiguriert werden. Feiertage werden als Datumsliste in der Tarif-Konfiguration hinterlegt. Überschreitet die Parkdauer 24 Stunden, wird automatisch auf die Tagespauschale umgestellt. `Parking.Pricing.FlatRatePricing` bietet eine vereinfachte Alternative, die eine Tagespauschale unabhängig von der Tageszeit anwendet.
+`Parking.Pricing.TimeBasedPricing` berechnet die Gebühr anhand der Parkdauer und konfigurierbarer Zeitslots. Die Abrechnung erfolgt auf Viertelstundenbasis, wobei der zu Beginn der jeweiligen Viertelstunde geltende Tarif für die gesamte Viertelstunde gilt. Für Wochenenden und Feiertage können separate Zeitslot-Listen konfiguriert werden. Feiertage werden als Datumsliste in der Tarif-Konfiguration hinterlegt. Überschreitet die Parkdauer 24 Stunden, wird automatisch auf die Tagespauschale umgestellt. `Parking.Pricing.FlatRatePricing` bietet eine vereinfachte Alternative, die eine Tagespauschale unabhängig von der Tageszeit anwendet. Die Konfiguration der jeweiligen Strategie wird aus den typisierten Untertabellen gelesen.
 
 Die Wahl der anzuwendenden Strategie erfolgt im `ParkingSystem` anhand des `type`-Felds des Tarif-Datensatzes.
 
@@ -133,9 +133,9 @@ Die Benutzeroberfläche ist als Phoenix LiveView-Anwendung umgesetzt. Der Zustan
 
 Die Parkhaus-Ansicht bildet die primäre Schnittstelle für den Parkierungsprozess. Beim Laden der Seite wird das erste verfügbare Parkhaus ausgewählt. Über ein Auswahlmenü kann zwischen mehreren Parkhäusern gewechselt werden.
 
-Für Gelegenheitsnutzer simuliert ein Klick auf die Einfahrtsschaltfläche das Drücken des Knopfs an der Eingangsschranke. Das System erstellt ein Ticket, weist einen freien Parkplatz zu und zeigt die Ticketdetails (UUID, Einfahrtszeit, zugewiesener Parkplatz) an. Anschliessend kann die Gebührenberechnung ausgelöst und der zu zahlende Betrag angezeigt werden. Nach der Bezahlung gibt die Ausfahrt-Schaltfläche den Parkplatz frei und markiert die Ausfahrtszeit. Über eine Scan-Funktion kann ein bestehendes Ticket anhand der UUID geladen werden, um dessen Status einzusehen oder die Bezahlung und Ausfahrt nachträglich vorzunehmen.
+Für Gelegenheitsnutzer simuliert ein Klick auf die Einfahrtsschaltfläche das Drücken des Knopfs an der Eingangsschranke. Das System erstellt ein Ticket, weist einen freien Parkplatz zu und zeigt die Ticketdetails (UUID, Einfahrtszeit, zugewiesener Parkplatz) sowie die bis dahin aufgelaufene Gebühr direkt an. Die angezeigte Gebühr wird serverseitig bei jeder Interaktion neu berechnet. Nach der Bezahlung gibt die Ausfahrt-Schaltfläche den Parkplatz frei und markiert die Ausfahrtszeit. Über eine Scan-Funktion kann ein bestehendes Ticket anhand der UUID geladen werden, um dessen Status einzusehen oder die Bezahlung und Ausfahrt nachträglich vorzunehmen.
 
-Für Dauermieter authentifiziert sich der Nutzer mit seinem Zugangscode. Das System prüft den Code sowie den Zahlungsstatus. Bei offener Miete ab dem 15. des Monats wird der Zugang verweigert. Nach erfolgreicher Anmeldung werden Einfahrt und Ausfahrt separat ausgelöst, wobei ein aktives Ticket erstellt beziehungsweise abgeschlossen und der Parkplatz entsprechend belegt oder freigegeben wird.
+Für Dauermieter authentifiziert sich der Nutzer mit seinem Zugangscode. Das System prüft den Code sowie den Zahlungsstatus. Die Sperrlogik unterscheidet zwei Fälle: Ist die Miete zwei oder mehr Monate im Rückstand, erfolgt die Sperrung sofort. Ist die Miete genau einen Monat im Rückstand, gilt eine Frist bis zum 15. des laufenden Monats. Nach erfolgreicher Anmeldung werden Einfahrt und Ausfahrt separat ausgelöst, wobei ein aktives Ticket erstellt beziehungsweise abgeschlossen und der Parkplatz entsprechend belegt oder freigegeben wird.
 
 #figure(
   image("/documentation/screenshots/Einfahrt_gelegenheit.png", width: 100%),
@@ -154,7 +154,7 @@ Für Dauermieter authentifiziert sich der Nutzer mit seinem Zugangscode. Das Sys
 
 Die Administrationsoberfläche ist durch ein Passwort geschützt. Erst nach erfolgreicher Anmeldung werden die Verwaltungsfunktionen freigeschaltet und die Dauermieterliste des ausgewählten Parkhauses angezeigt. Die Tabelle enthält Name, Zugangscode, zugewiesenen Parkplatz, Sperrstatus sowie das Datum, bis zu dem die Miete bezahlt ist.
 
-Ein neuer Dauermieter wird mit automatisch generiertem UUID-Zugangscode angelegt. Das System weist ihm automatisch den nächsten freien Parkplatz zu und zeigt den generierten Code nach der Erstellung an. Die Miete eines Dauermieters kann als bezahlt markiert werden, wodurch das `rent_paid_until`-Datum um einen Monat verlängert und ein allfälliger Sperrstatus aufgehoben wird. Zusätzlich kann der Sperrstatus einzelner Dauermieter manuell umgeschaltet werden.
+Ein neuer Dauermieter wird mit automatisch generiertem UUID-Zugangscode angelegt. Das System weist ihm automatisch den nächsten freien Parkplatz zu und zeigt den generierten Code nach der Erstellung an. Bei der Erstellung wird die erste Monatsmiete sofort als Ticket- und Zahlungsdatensatz erfasst, sodass der Dauermieter ab dem ersten Tag Zugang erhält. Die Miete eines Dauermieters kann als bezahlt markiert werden, wodurch das `rent_paid_until`-Datum um einen Monat verlängert, ein Ticket sowie ein Zahlungsdatensatz für die Miete erstellt und ein allfälliger Sperrstatus aufgehoben wird. Zusätzlich kann der Sperrstatus einzelner Dauermieter manuell umgeschaltet werden. Einem Dauermieter kann nachträglich ein anderer freier Parkplatz zugewiesen werden, sofern er aktuell nicht parkiert.
 
 #figure(
   image("/documentation/screenshots/Admin_login.png", width: 100%),
@@ -196,9 +196,13 @@ Die Persistenz erfolgt über eine relationale PostgreSQL-Datenbank. Das Schema w
     table.header([*Tabelle*], [*Beschreibung*]),
     [`parking_garage`], [Parkhaus mit Name],
     [`level`], [Stockwerk mit Nummer und Verweis auf das Parkhaus],
-    [`parking_spot`], [Parkplatz mit Belegungsstatus und Verweis auf das Stockwerk],
+    [`parking_spot`], [Parkplatz mit lesbarer Platznummer, Belegungsstatus und Verweis auf das Stockwerk],
+    [`occasional_user`], [Gelegenheitsnutzer als Stub-Entität; enthält nur die ID-Verknüpfung zur User-Tabelle, wird im Parkvorgang nicht aktiv befüllt],
     [`ticket`], [Parkticket mit UUID-Primärschlüssel, Ein-/Ausfahrtszeit, Bezahlstatus sowie Verweisen auf Parkplatz, Tarif und optional Dauermieter],
-    [`pricing`], [Tarif-Konfiguration mit Typ und JSON-Konfigurationsfeld, verknüpft mit einem Parkhaus],
+    [`pricing`], [Tarif-Eintrag mit Typ (`time_based`, `daily_rate`, `monthly_rent`), verknüpft mit einem Parkhaus],
+    [`time_based_pricing`], [Konfiguration für zeitbasierte Tarife: Zeitslots, Wochenend- und Feiertagstarife, Tagespauschale],
+    [`daily_rate_pricing`], [Konfiguration für Tagespauschalen-Tarife: einheitliche Tagesrate],
+    [`monthly_rent_pricing`], [Konfiguration für Monatsmiete pro Parkhaus: monatlicher Mietbetrag],
     [`payment`], [Zahlungsdatensatz mit Betrag, Zeitstempel und Verweis auf das Ticket],
     [`user`], [Basisentität für alle Benutzer mit Typenfeld],
     [`permanent_user`], [Dauermieter mit Zugangscode, Sperrstatus, Mietdaten und zugewiesenem Parkplatz],
@@ -218,9 +222,9 @@ Die Persistenz erfolgt über eine relationale PostgreSQL-Datenbank. Das Schema w
 
 Tickets verwenden einen UUID-Primärschlüssel (`binary_id`). Dies ermöglicht die sichere Übergabe der Ticket-ID an den Benutzer (z.B. zur Anzeige am Bildschirm oder als QR-Code), ohne dass sequentielle IDs erraten werden können.
 
-#heading(outlined: false, level: 4)[JSON-Konfiguration für Tarife]
+#heading(outlined: false, level: 4)[Typisierte Untertabellen für Tarife]
 
-Die Tarif-Konfiguration wird als strukturierte JSON-Map im `config`-Feld gespeichert. Dieses Vorgehen erlaubt flexible Konfigurationen (unterschiedliche Zeitslots, Feiertage, Tagespauschalen) ohne Änderungen am Datenbankschema. Der Tarif-Typ bestimmt, wie das System das Konfigurationsfeld interpretiert.
+Jeder Tarif-Typ (`time_based`, `daily_rate`, `monthly_rent`) besitzt eine eigene Untertabelle mit den jeweils relevanten Feldern. Dies ermöglicht Datenbankvalidierungen auf Feldebene und klarere Abfragen. Die Monatsmiete ist als eigener Tarif-Typ pro Parkhaus hinterlegt, sodass verschiedene Parkhäuser unterschiedliche Mietbeträge verwenden können.
 
 #heading(outlined: false, level: 4)[Migrationsbasierte Schemaevolution]
 

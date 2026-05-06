@@ -40,7 +40,15 @@ defmodule Parking.Users.PermanentUser do
 
   def rent_due?(%__MODULE__{rent_paid_until: paid_until}, today) do
     current_month_start = %Date{year: today.year, month: today.month, day: 1}
+    # Go back one day from current month start → last day of previous month → set day=1
+    previous_month_start = %{Date.add(current_month_start, -1) | day: 1}
 
-    Date.compare(paid_until, current_month_start) == :lt and today.day >= 15
+    cond do
+      # Two or more months overdue → block immediately, no grace period
+      Date.compare(paid_until, previous_month_start) == :lt -> true
+      # Exactly one month behind → grace period until the 15th
+      Date.compare(paid_until, current_month_start) == :lt -> today.day >= 15
+      true -> false
+    end
   end
 end

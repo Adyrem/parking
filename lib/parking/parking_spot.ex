@@ -4,7 +4,7 @@ defmodule Parking.ParkingSpot do
   import Ecto.Changeset
 
   schema "parking_spot" do
-    field :number, :integer
+    field :number, :integer, default: 0
     field :is_occupied, :boolean, default: false
     belongs_to :level, Parking.Level, foreign_key: :level_id
     has_many :tickets, Parking.Ticket, foreign_key: :spot_id
