@@ -6,7 +6,9 @@
 
 Die Umsetzung des Prototyps erfolgt als Webanwendung unter Verwendung der Programmiersprache Elixir und des Webframeworks Phoenix in Kombination mit LiveView. Die Wahl dieser Technologien orientiert sich an etablierten Konventionen im Elixir-Ökosystem und unterstützt insbesondere die Entwicklung interaktiver, zustandsbehafteter Weboberflächen ohne komplexe clientseitige Logik.
 
-Als Laufzeitumgebung dient die Erlang VM (BEAM), welche Nebenläufigkeit und hohe Stabilität gewährleistet. Für die Persistenz wird eine relationale Datenbank auf Basis von PostgreSQL eingesetzt. Der Datenzugriff erfolgt über Ecto, welches als Standardbibliothek für Datenbankinteraktionen im Phoenix-Umfeld gilt.
+Als Laufzeitumgebung dient die Erlang VM (BEAM). Die BEAM wurde ursprünglich für Telekommunikationssysteme entwickelt, bei denen hohe Verfügbarkeit und gleichzeitige Verarbeitung vieler unabhängiger Vorgänge zentrale Anforderungen sind. Sie ermöglicht die parallele Ausführung von Millionen leichtgewichtiger Prozesse, die vollständig voneinander isoliert sind. Tritt in einem Prozess ein Fehler auf, bleibt der Rest des Systems davon unberührt. Für dieses Projekt bedeutet das konkret: Mehrere Parkvorgänge können gleichzeitig abgewickelt werden, ohne dass sich die Prozesse gegenseitig beeinflussen. Ein Fehler bei einer Einfahrt oder Zahlung gefährdet nicht die Stabilität des gesamten Systems.
+
+Für die Persistenz wird eine relationale Datenbank auf Basis von PostgreSQL eingesetzt. Der Datenzugriff erfolgt über Ecto, welches als Standardbibliothek für Datenbankinteraktionen im Phoenix-Umfeld gilt.
 
 Das Projekt wird mit dem Build-Tool Mix verwaltet, welches ebenfalls integraler Bestandteil von Elixir ist. Die Versionsverwaltung erfolgt mit Git.
 
@@ -14,17 +16,19 @@ Die Anwendung wird lokal entwickelt und über einen Webbrowser ausgeführt. Eine
 
 === Projektstruktur
 
-Die Struktur des Projekts folgt den durch Phoenix vorgegebenen Konventionen. Diese sehen eine klare Trennung zwischen Webschicht und Geschäftslogik vor.
+Die Struktur des Projekts folgt den durch Phoenix vorgegebenen Konventionen. Diese sehen eine klare Trennung zwischen Webschicht und Geschäftslogik vor, was auch dem erarbeiteten Konzept entspricht.
 
-Die Geschäftslogik wird in sogenannten Kontext-Modulen innerhalb des lib-Verzeichnisses implementiert. Diese Module kapseln zusammengehörige Funktionalitäten und stellen eine definierte Schnittstelle nach aussen bereit. Die Webschicht befindet sich im Verzeichnis lib/<app>\_web und umfasst LiveViews, Controller sowie zugehörige Templates.
+Die Geschäftslogik wird in sogenannten Kontext-Modulen innerhalb des lib-Verzeichnisses implementiert. Diese Module kapseln zusammengehörige Funktionalitäten und stellen eine definierte Schnittstelle nach aussen bereit. Die Webschicht befindet sich im Verzeichnis lib/parking_web und umfasst LiveViews, Controller sowie zugehörige Templates.
 
-Datenbankschemata und Migrationen werden im Verzeichnis priv/repo abgelegt. Tests befinden sich im Verzeichnis test und orientieren sich strukturell an den implementierten Modulen.
+Datenbankschemata und Migrationen werden im Verzeichnis priv/repo abgelegt. Eine Migration ist ein versioniertes Skript, das eine Änderung am Datenbankschema beschreibt, z.B. das Erstellen einer Tabelle oder das Hinzufügen einer Spalte. Migrationen werden sequenziell ausgeführt und erlauben es, den Datenbankzustand jederzeit aus dem Quellcode herzustellen oder schrittweise weiterzuentwickeln. Gegenüber einer direkten Anpassung der Datenbank hat dieser Ansatz den Vorteil, dass Schemaänderungen versioniert und nachvollziehbar im Quellcode festgehalten sind. Jede Änderung kann so auf einer neuen Umgebung reproduziert werden, ohne dass die Datenbankstruktur manuell nachgezogen werden muss. 
+
+Tests befinden sich im Verzeichnis test und orientieren sich strukturell an den implementierten Modulen.
 
 Diese Struktur entspricht den offiziellen Phoenix-Konventionen und unterstützt eine klare Organisation sowie eine gute Wartbarkeit des Codes.
 
 === Programmierrichtlinien
 
-Die Implementierung orientiert sich an den idiomatischen Richtlinien von Elixir. Funktionen werden klein gehalten und erfüllen jeweils eine klar abgegrenzte Aufgabe. Die Kapselung von Logik erfolgt über Module, welche über wohldefinierte Schnittstellen miteinander interagieren.
+Die Implementierung orientiert sich an den Richtlinien von Elixir. Funktionen werden klein gehalten und erfüllen jeweils eine klar abgegrenzte Aufgabe. Die Kapselung von Logik erfolgt über Module, welche über wohldefinierte Schnittstellen miteinander interagieren.
 
 Die Benennung von Modulen erfolgt in PascalCase, während Funktionen und Variablen in snake_case geschrieben werden. Diese Namenskonventionen entsprechen den üblichen Vorgaben der Elixir-Community.
 
@@ -47,10 +51,6 @@ Die Teststrategie orientiert sich an den Möglichkeiten des Elixir-Testframework
 Abhängigkeiten zu externen Systemen werden durch Mock-Implementierungen ersetzt, sodass Tests unabhängig und reproduzierbar ausgeführt werden können.
 
 Durch die klare Trennung von Logik und Präsentation sowie die Nutzung von Kontext-Modulen wird eine gute Testbarkeit der Anwendung erreicht.
-
-=== Begründung der Technologieentscheidung
-
-Die Wahl der Technologie basiert primär darauf, während der Erarbeitung des Prototypes eine neue Technologie zu lernen.
 
 == Softwareaufbau
 
@@ -79,7 +79,7 @@ Stellt ein Stockwerk innerhalb eines Parkhauses mit Stockwerknummer und Parkplat
 
 *Parking.ParkingSpot*
 
-Entspricht einem einzelnen Parkplatz und hält dessen Belegungsstatus. Im Konzept war ein dreistufiger Lebenszyklus (frei, reserviert, belegt) vorgesehen. In der Umsetzung wurde dieser auf einen booleschen Belegungsstatus (`is_occupied`) vereinfacht, da eine explizite Reservierungsphase im Prototyp nicht benötigt wird: Die Zuweisung und Belegung eines Parkplatzes erfolgt atomisch beim Erstellen des Tickets.
+Entspricht einem einzelnen Parkplatz und hält dessen Belegungsstatus. Im Konzept war ein dreistufiger Lebenszyklus (frei, reserviert, belegt) vorgesehen. In der Umsetzung wurde dieser auf den boolean Wert Belegungsstatus (`is_occupied`) vereinfacht, da eine explizite Reservierungsphase im Prototyp nicht benötigt wird. Die Zuweisung und Belegung eines Parkplatzes erfolgt beim Erstellen des Tickets.
 
 *Parking.Ticket*
 
@@ -123,7 +123,7 @@ Simuliert die Buchung von Transaktionen in einem Buchhaltungssystem und ist im P
 
 Berechnet Umsatzdaten aus den gespeicherten Zahlungsdatensätzen und unterstützt Berechnungen nach Zeitraum, Monat und Jahr, jeweils aufgeschlüsselt nach Kundenkategorie.
 
-Der aktiv genutzte Servicemodul wird über die Applikationskonfiguration bestimmt, was den Austausch gegen Test-Stubs ermöglicht, ohne den Produktionscode zu verändern.
+Das aktiv genutzte Servicemodul wird über die Applikationskonfiguration bestimmt, was den Austausch gegen Test-Stubs ermöglicht, ohne den Produktionscode zu verändern.
 
 == GUI-Implementierung
 
@@ -137,8 +137,6 @@ Für Gelegenheitsnutzer simuliert ein Klick auf die Einfahrtsschaltfläche das D
 
 Für Dauermieter authentifiziert sich der Nutzer mit seinem Zugangscode. Das System prüft den Code sowie den Zahlungsstatus. Bei offener Miete ab dem 15. des Monats wird der Zugang verweigert. Nach erfolgreicher Anmeldung werden Einfahrt und Ausfahrt separat ausgelöst, wobei ein aktives Ticket erstellt beziehungsweise abgeschlossen und der Parkplatz entsprechend belegt oder freigegeben wird.
 
-Zusätzlich zeigt die Seite eine tabellarische Übersicht aller Stockwerke und Parkplätze, wobei jeder Platz mit seinem Typ (Gast frei, Gast belegt, Dauermieter) gekennzeichnet ist.
-
 #figure(
   image("/documentation/screenshots/Einfahrt_gelegenheit.png", width: 100%),
   caption: [Einfahrt Gelegenheitsnutzer]
@@ -149,10 +147,7 @@ Zusätzlich zeigt die Seite eine tabellarische Übersicht aller Stockwerke und P
   caption: [Dauermieter-Bereich]
 )
 
-#figure(
-  image("/documentation/screenshots/Etagen.png", width: 100%),
-  caption: [Etagen Ansicht]
-)
+
 
 
 === Administrationsoberfläche (AdminLive)
@@ -174,11 +169,18 @@ Ein neuer Dauermieter wird mit automatisch generiertem UUID-Zugangscode angelegt
 
 Die Statistik-Ansicht zeigt Belegungs- und Umsatzdaten für das ausgewählte Parkhaus. Die Daten werden beim Laden der Seite berechnet und sind per Parkhaus-Auswahlmenü filterbar.
 
-Die Belegungsstatistik umfasst die Gesamtanzahl Parkplätze, aufgeteilt nach Dauermieter-Plätzen, belegten Gast-Plätzen und freien Gast-Plätzen, sowie die Auslastungsquote in Prozent. Der Monatsumsatz zeigt den Umsatz des laufenden Monats, der Jahresumsatz jenen des laufenden Jahres. Beide werden nach Gelegenheitsnutzern und Dauermietern aufgeschlüsselt dargestellt.
+Die Belegungsstatistik umfasst die Gesamtanzahl Parkplätze, aufgeteilt nach Dauermieter-Plätzen, belegten Gast-Plätzen und freien Gast-Plätzen, sowie die Auslastungsquote in Prozent. Der Monatsumsatz zeigt den Umsatz des laufenden Monats, der Jahresumsatz jenen des laufenden Jahres. Beide werden nach Gelegenheitsnutzern und Dauermietern aufgeschlüsselt dargestellt. Die für das Parkaus erfassten Tarife, Tagespauschale und Dauermieten werden aufgelistet.  
 
 #figure(
   image("/documentation/screenshots/Parkstatistiken.png", width: 100%),
   caption: [Statistik-Ansicht]
+)
+
+Zusätzlich zeigt die Seite eine tabellarische Übersicht aller Stockwerke und Parkplätze, wobei jeder Platz mit seinem Typ (Gast frei, Gast belegt, Dauermieter frei, Dauermieter belegt) gekennzeichnet ist.
+
+#figure(
+  image("/documentation/screenshots/Etagen.png", width: 100%),
+  caption: [Etagen Ansicht]
 )
 
 == Datenbankimplementierung und -anbindung
@@ -519,6 +521,40 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
   #figure(
     table(
       columns: 2,
+      [*ID*], [TC-17],
+      [*Beschreibung*], [Daten bleiben konsistent],
+      [*Vorgehen*], [Eine fehlgeschlagene Zahlung wird über den `FailingStub` simuliert. Anschliessend werden Ticket und Parkplatz aus der Datenbank gelesen.],
+      [*Erwartetes Ergebnis*], [Keine inkonsistenten Zustände],
+      [*Tatsächliches Ergebnis*], [Ticket bleibt unbezahlt. Parkplatz bleibt belegt. Kein Zahlungsdatensatz wurde erstellt.],
+      [*Status*], [Bestanden],
+      [*Referenz*], [NF-04, NF-07],
+    ),
+    caption: [Testergebnis TC-17]
+  )
+]
+
+#[
+  #show figure: set align(left)
+  #figure(
+    table(
+      columns: 2,
+      [*ID*], [TC-18],
+      [*Beschreibung*], [Benutzeroberfläche verständlich],
+      [*Vorgehen*], [Manueller Test — Die Weboberfläche wird ohne Anleitung bedient. Alle Kernfunktionen werden ausgeführt.],
+      [*Erwartetes Ergebnis*], [Bedienung ohne Anleitung möglich],
+      [*Tatsächliches Ergebnis*], [Alle Kernfunktionen (Einfahrt, Bezahlung, Ausfahrt, Dauermieter-Verwaltung) sind intuitiv zugänglich.],
+      [*Status*], [Bestanden],
+      [*Referenz*], [NF-03],
+    ),
+    caption: [Testergebnis TC-18]
+  )
+]
+
+#[
+  #show figure: set align(left)
+  #figure(
+    table(
+      columns: 2,
       [*ID*], [TC-19],
       [*Beschreibung*], [Spezifikationskonforme Wochentagstarife],
       [*Vorgehen*], [Ein Ticket mit 2 Stunden Parkdauer am Donnerstag (10:00-12:00) wird mit der vollständigen Tarifkonfiguration gemäss Lastenheft Anhang 5.1 an `TimeBasedPricing.calculate/2` übergeben.],
@@ -582,36 +618,3 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
   )
 ]
 
-#[
-  #show figure: set align(left)
-  #figure(
-    table(
-      columns: 2,
-      [*ID*], [TC-17],
-      [*Beschreibung*], [Daten bleiben konsistent],
-      [*Vorgehen*], [Eine fehlgeschlagene Zahlung wird über den `FailingStub` simuliert. Anschliessend werden Ticket und Parkplatz aus der Datenbank gelesen.],
-      [*Erwartetes Ergebnis*], [Keine inkonsistenten Zustände],
-      [*Tatsächliches Ergebnis*], [Ticket bleibt unbezahlt. Parkplatz bleibt belegt. Kein Zahlungsdatensatz wurde erstellt.],
-      [*Status*], [Bestanden],
-      [*Referenz*], [NF-04, NF-07],
-    ),
-    caption: [Testergebnis TC-17]
-  )
-]
-
-#[
-  #show figure: set align(left)
-  #figure(
-    table(
-      columns: 2,
-      [*ID*], [TC-18],
-      [*Beschreibung*], [Benutzeroberfläche verständlich],
-      [*Vorgehen*], [Manueller Test — Die Weboberfläche wird ohne Anleitung bedient. Alle Kernfunktionen werden ausgeführt.],
-      [*Erwartetes Ergebnis*], [Bedienung ohne Anleitung möglich],
-      [*Tatsächliches Ergebnis*], [Alle Kernfunktionen (Einfahrt, Bezahlung, Ausfahrt, Dauermieter-Verwaltung) sind intuitiv zugänglich.],
-      [*Status*], [Bestanden],
-      [*Referenz*], [NF-03],
-    ),
-    caption: [Testergebnis TC-18]
-  )
-]

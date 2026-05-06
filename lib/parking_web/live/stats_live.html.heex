@@ -27,6 +27,48 @@
       </div>
     </div>
 
+          <%!-- Occupancy Progress Bar --%>
+      <div class={[
+        "rounded-lg p-6 border",
+        cond do
+          @stats.occupancy_rate >= 95 -> "bg-red-950 border-red-700"
+          @stats.occupancy_rate >= 80 -> "bg-yellow-950 border-yellow-700"
+          true -> "bg-gray-800 border-gray-700"
+        end
+      ]}>
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-gray-400 text-sm font-semibold uppercase">Garagenauslastung</p>
+          <%= cond do %>
+            <% @stats.occupancy_rate >= 95 -> %>
+              <span class="text-xs font-bold text-red-300 bg-red-900 border border-red-700 rounded px-2 py-0.5">
+                Voll
+              </span>
+            <% @stats.occupancy_rate >= 80 -> %>
+              <span class="text-xs font-bold text-yellow-300 bg-yellow-900 border border-yellow-700 rounded px-2 py-0.5">
+                Fast voll
+              </span>
+            <% true -> %>
+          <% end %>
+        </div>
+        <div class="w-full bg-gray-700 rounded-full h-8 overflow-hidden">
+          <div
+            class={[
+              "h-full rounded-full transition-all duration-300",
+              cond do
+                @stats.occupancy_rate >= 95 -> "bg-red-500"
+                @stats.occupancy_rate >= 80 -> "bg-yellow-500"
+                true -> "bg-green-500"
+              end
+            ]}
+            style={"width: #{@stats.occupancy_rate}%"}
+          >
+            <div class="h-full flex items-center justify-center text-white text-sm font-bold">
+              {if @stats.occupancy_rate > 10, do: "#{@stats.occupancy_rate}%"}
+            </div>
+          </div>
+        </div>
+      </div>
+
     <%!-- Overall Statistics --%>
     <%= if @stats do %>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -167,48 +209,6 @@
           <% end %>
         </div>
       <% end %>
-
-      <%!-- Occupancy Progress Bar --%>
-      <div class={[
-        "rounded-lg p-6 border",
-        cond do
-          @stats.occupancy_rate >= 95 -> "bg-red-950 border-red-700"
-          @stats.occupancy_rate >= 80 -> "bg-yellow-950 border-yellow-700"
-          true -> "bg-gray-800 border-gray-700"
-        end
-      ]}>
-        <div class="flex items-center justify-between mb-4">
-          <p class="text-gray-400 text-sm font-semibold uppercase">Garagenauslastung</p>
-          <%= cond do %>
-            <% @stats.occupancy_rate >= 95 -> %>
-              <span class="text-xs font-bold text-red-300 bg-red-900 border border-red-700 rounded px-2 py-0.5">
-                Voll
-              </span>
-            <% @stats.occupancy_rate >= 80 -> %>
-              <span class="text-xs font-bold text-yellow-300 bg-yellow-900 border border-yellow-700 rounded px-2 py-0.5">
-                Fast voll
-              </span>
-            <% true -> %>
-          <% end %>
-        </div>
-        <div class="w-full bg-gray-700 rounded-full h-8 overflow-hidden">
-          <div
-            class={[
-              "h-full rounded-full transition-all duration-300",
-              cond do
-                @stats.occupancy_rate >= 95 -> "bg-red-500"
-                @stats.occupancy_rate >= 80 -> "bg-yellow-500"
-                true -> "bg-green-500"
-              end
-            ]}
-            style={"width: #{@stats.occupancy_rate}%"}
-          >
-            <div class="h-full flex items-center justify-center text-white text-sm font-bold">
-              {if @stats.occupancy_rate > 10, do: "#{@stats.occupancy_rate}%"}
-            </div>
-          </div>
-        </div>
-      </div>
 
       <%!-- Levels Overview --%>
       <div class="space-y-6">
