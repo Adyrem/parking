@@ -61,8 +61,4 @@ defmodule Parking.Services.StatisticsService do
     calculate_revenue_by_period(start_date, end_date, garage_id, category)
   end
 
-  def generate_usage_stats() do
-    # Stub for now
-    :ok
-  end
 end

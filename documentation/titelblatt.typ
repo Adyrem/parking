@@ -42,5 +42,5 @@
 
 #v(3cm)
 
-#text("Abgabedatum: xx.xx.2026")\
+#text("Abgabedatum: 12.05.2026")\
 #text("Version 0.1")

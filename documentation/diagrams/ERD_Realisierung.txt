@@ -19,6 +19,7 @@ entity Level {
 entity ParkingSpot {
   +id : int <<PK>>
   --
+  number : int
   is_occupied : boolean
   level_id : int <<FK>>
 }
@@ -38,8 +39,30 @@ entity Pricing {
   +id : int <<PK>>
   --
   type : string
-  config : jsonb
   garage_id : int <<FK>>
+}
+
+entity TimeBasedPricing {
+  +pricing_id : int <<PK, FK>>
+  --
+  time_slots : jsonb
+  weekend_time_slots : jsonb
+  holiday_time_slots : jsonb
+  holidays : jsonb
+  rate_per_hour : float
+  daily_rate : float
+}
+
+entity DailyRatePricing {
+  +pricing_id : int <<PK, FK>>
+  --
+  daily_rate : float
+}
+
+entity MonthlyRentPricing {
+  +pricing_id : int <<PK, FK>>
+  --
+  monthly_rent : float
 }
 
 entity Payment {
@@ -79,6 +102,10 @@ ParkingGarage ||--o{ Pricing
 Level ||--o{ ParkingSpot
 ParkingSpot ||--o{ Ticket
 Pricing ||--o{ Ticket
+
+Pricing ||--o| TimeBasedPricing
+Pricing ||--o| DailyRatePricing
+Pricing ||--o| MonthlyRentPricing
 
 User ||--|| PermanentUser
 PermanentUser |o--o{ Ticket

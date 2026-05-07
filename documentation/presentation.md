@@ -2,6 +2,14 @@
 marp: true
 theme: default
 paginate: true
+style: |
+  section.small-table table {
+    font-size: 0.75em;
+  }
+  section.img-slide img {
+    display: block;
+    margin: 0 auto;
+  }
 ---
 
 # Parkhaus-Verwaltungssoftware
@@ -18,6 +26,8 @@ Adrian Aeschlimann · TEKO Schweizerische Fachschule · Mai 2026
 - **Ziel:** Lastenheft + funktionsfähiger Prototyp
 
 ---
+
+<!-- _class: small-table -->
 
 ## Zwei Nutzertypen
 
@@ -40,9 +50,11 @@ Motivation: neue Technologie im Rahmen der Arbeit kennenlernen
 
 ---
 
+<!-- _class: img-slide -->
+
 ## Architektur
 
-![Modulübersicht](diagrams/Moduluebersicht.png)
+<img src="diagrams/Moduluebersicht.png" width="60%">
 
 ---
 
@@ -57,8 +69,11 @@ PricingStrategy (Behaviour)
 - Viertelstundenabrechnung (Tarif zu Beginn gilt für ganze Viertelstunde)
 - Separate Slots für Wochenende und Feiertage
 - Ab 24 Stunden → Tagespauschale CHF 35.00
+- Monatsmiete pro Parkhaus konfigurierbar (eigener Tarif-Typ)
 
 ---
+
+<!-- _class: small-table -->
 
 ## Benutzeroberfläche
 
@@ -72,24 +87,28 @@ PricingStrategy (Behaviour)
 
 ---
 
+<!-- _class: img-slide -->
+
 ## Datenbank
 
-![ERD](diagrams/ERD_Realisierung.png)
+<img src="diagrams/ERD_Realisierung.png" width="40%">
 
 ---
 
+<!-- _class: small-table -->
+
 ## Tests
 
-18 Testfälle · ExUnit · alle bestanden
+22 Testfälle · ExUnit · alle bestanden
 
 | Kategorie | Testfälle |
 |---|---|
 | Einfahrt & Parkplatzzuweisung | TC-01, TC-02 |
-| Preisberechnung | TC-03 – TC-06 |
+| Preisberechnung | TC-03, TC-04, TC-05, TC-06, TC-19, TC-20, TC-21, TC-22 |
 | Dauermieter & Authentifizierung | TC-07, TC-08 |
-| Bezahlung & Ausfahrt | TC-09 – TC-12 |
+| Bezahlung & Ausfahrt | TC-09, TC-10, TC-11, TC-12 |
 | Statistiken | TC-13, TC-14 |
-| Nicht-funktionale Anforderungen | TC-15 – TC-18 |
+| Nicht-funktionale Anforderungen | TC-15, TC-16, TC-17, TC-18 |
 
 ---
 
@@ -99,11 +118,12 @@ PricingStrategy (Behaviour)
 - Vollständiger Parkierungsprozess für beide Nutzertypen
 - Konfigurierbare Preisberechnung mit Strategy Pattern
 - Admin-Dashboard und Statistikauswertung
-- 18 Testfälle bestanden
+- 22 Testfälle bestanden
 
 **Learnings:**
 - LiveView vereinfacht serverseitige UI erheblich
-- BEAM-Ökosystem: robuste Grundlage für Prototyp
+- Elixer-Ökosystem: robuste Grundlage für Prototyp
+- Controlling hat Verbesserungspotenzial
 
 ---
 

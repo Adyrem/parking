@@ -218,10 +218,6 @@ defmodule ParkingWeb.ParkingLive do
 
   defp error_reason_to_message(reason), do: inspect(reason)
 
-  def perm_user_parked?(user) do
-    user != nil and user.spot != nil and user.spot.is_occupied
-  end
-
   def duration_in_hours(ticket) do
     if ticket.exit_time && ticket.entry_time do
       seconds = DateTime.diff(ticket.exit_time, ticket.entry_time, :second)
