@@ -4,8 +4,8 @@ defmodule ParkingWeb.AdminLive do
   import Ecto.Query
 
   alias Parking.Repo
-  alias Parking.ParkingSystem
   alias Parking.ParkingGarage
+  alias Parking.PermanentParking
   alias Parking.Users.PermanentUser
 
   def mount(_params, _session, socket) do
@@ -34,8 +34,8 @@ defmodule ParkingWeb.AdminLive do
 
     {perm_users, unassigned_spots} =
       if socket.assigns.admin_authenticated do
-        {ParkingSystem.list_permanent_users(garage_id),
-         ParkingSystem.list_unassigned_spots(garage_id)}
+        {PermanentParking.list_permanent_users(garage_id),
+         PermanentParking.list_unassigned_spots(garage_id)}
       else
         {[], []}
       end
@@ -59,8 +59,8 @@ defmodule ParkingWeb.AdminLive do
          admin_authenticated: true,
          admin_message: "Admin erfolgreich angemeldet",
          admin_error: nil,
-         perm_users: ParkingSystem.list_permanent_users(garage_id),
-         unassigned_spots: ParkingSystem.list_unassigned_spots(garage_id)
+         perm_users: PermanentParking.list_permanent_users(garage_id),
+         unassigned_spots: PermanentParking.list_unassigned_spots(garage_id)
        )}
     else
       {:noreply,
@@ -89,8 +89,8 @@ defmodule ParkingWeb.AdminLive do
 
       {:noreply,
        assign(socket,
-         perm_users: ParkingSystem.list_permanent_users(garage_id),
-         unassigned_spots: ParkingSystem.list_unassigned_spots(garage_id),
+         perm_users: PermanentParking.list_permanent_users(garage_id),
+         unassigned_spots: PermanentParking.list_unassigned_spots(garage_id),
          admin_message: "Dauerparkerliste aktualisiert",
          admin_error: nil
        )}
@@ -103,12 +103,12 @@ defmodule ParkingWeb.AdminLive do
     if socket.assigns.admin_authenticated do
       garage_id = socket.assigns.garage_id
 
-      case ParkingSystem.create_permanent_user(garage_id, name) do
+      case PermanentParking.create_permanent_user(garage_id, name) do
         {:ok, perm_user} ->
           {:noreply,
            assign(socket,
-             perm_users: ParkingSystem.list_permanent_users(garage_id),
-             unassigned_spots: ParkingSystem.list_unassigned_spots(garage_id),
+             perm_users: PermanentParking.list_permanent_users(garage_id),
+             unassigned_spots: PermanentParking.list_unassigned_spots(garage_id),
              admin_message: "Dauerparker erfolgreich hinzugefügt. UUID: #{perm_user.access_code}",
              admin_error: nil
            )}
@@ -129,14 +129,14 @@ defmodule ParkingWeb.AdminLive do
     if socket.assigns.admin_authenticated do
       perm_user = Repo.get!(PermanentUser, user_id)
 
-      case ParkingSystem.process_rent_payment(perm_user) do
+      case PermanentParking.process_rent_payment(perm_user) do
         {:ok, updated_user} ->
           garage_id = socket.assigns.garage_id
 
           {:noreply,
            assign(socket,
-             perm_users: ParkingSystem.list_permanent_users(garage_id),
-             unassigned_spots: ParkingSystem.list_unassigned_spots(garage_id),
+             perm_users: PermanentParking.list_permanent_users(garage_id),
+             unassigned_spots: PermanentParking.list_unassigned_spots(garage_id),
              admin_message: "Miete wurde erfolgreich bezahlt für #{updated_user.name}",
              admin_error: nil
            )}
@@ -161,14 +161,14 @@ defmodule ParkingWeb.AdminLive do
     if socket.assigns.admin_authenticated do
       perm_user = Repo.get!(PermanentUser, user_id)
 
-      case ParkingSystem.assign_spot(perm_user, String.to_integer(spot_id)) do
+      case PermanentParking.assign_spot(perm_user, String.to_integer(spot_id)) do
         {:ok, _} ->
           garage_id = socket.assigns.garage_id
 
           {:noreply,
            assign(socket,
-             perm_users: ParkingSystem.list_permanent_users(garage_id),
-             unassigned_spots: ParkingSystem.list_unassigned_spots(garage_id),
+             perm_users: PermanentParking.list_permanent_users(garage_id),
+             unassigned_spots: PermanentParking.list_unassigned_spots(garage_id),
              admin_message: "Parkplatz erfolgreich zugewiesen",
              admin_error: nil
            )}
@@ -191,8 +191,8 @@ defmodule ParkingWeb.AdminLive do
 
       {:noreply,
        assign(socket,
-         perm_users: ParkingSystem.list_permanent_users(garage_id),
-         unassigned_spots: ParkingSystem.list_unassigned_spots(garage_id),
+         perm_users: PermanentParking.list_permanent_users(garage_id),
+         unassigned_spots: PermanentParking.list_unassigned_spots(garage_id),
          admin_message: "Benutzerstatus aktualisiert",
          admin_error: nil
        )}

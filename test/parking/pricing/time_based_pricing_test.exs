@@ -131,7 +131,7 @@ defmodule Parking.Pricing.TimeBasedPricingTest do
           %{"from" => "09:00", "to" => "18:00", "rate_per_hour" => 3.20},
           %{"from" => "18:00", "to" => "24:00", "rate_per_hour" => 2.40}
         ],
-        holidays: ["2026-01-01", "2026-12-25"],
+        holidays: [~D[2026-01-01], ~D[2026-12-25]],
         daily_rate: 35.0,
         default_rate_per_hour: 2.50
       }

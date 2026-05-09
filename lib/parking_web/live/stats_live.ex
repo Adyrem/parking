@@ -4,8 +4,9 @@ defmodule ParkingWeb.StatsLive do
 
   import Ecto.Query
   alias Parking.Repo
-  alias Parking.ParkingSystem
   alias Parking.ParkingGarage
+  alias Parking.GarageStats
+  alias Parking.Pricing.Calculator
   alias Parking.Services.StatisticsService
   alias Parking.Pricing
   alias Parking.Pricing.MonthlyRentConfig
@@ -70,7 +71,7 @@ defmodule ParkingWeb.StatsLive do
   defp assign_stats(socket, garage) do
     current_date = Date.utc_today()
 
-    pricing = ParkingSystem.get_garage_pricing(garage.id)
+    pricing = Calculator.get_garage_pricing(garage.id)
 
     monthly_rent_rate =
       Repo.one(
@@ -101,7 +102,7 @@ defmodule ParkingWeb.StatsLive do
     assign(socket,
       garage: garage,
       garage_id: garage.id,
-      stats: ParkingSystem.get_garage_stats(garage.id),
+      stats: GarageStats.get_garage_stats(garage.id),
       pricing: pricing,
       weekday_slots: weekday_slots,
       weekend_slots: weekend_slots,
@@ -129,6 +130,6 @@ defmodule ParkingWeb.StatsLive do
   def current_ticket_fee(%{permanent_user_id: id}) when not is_nil(id), do: nil
 
   def current_ticket_fee(ticket) do
-    ParkingSystem.calculate_fee(ticket)
+    Calculator.calculate_fee(ticket)
   end
 end

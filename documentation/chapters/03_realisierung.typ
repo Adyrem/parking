@@ -65,9 +65,25 @@ Die Anwendung ist gemäss den Phoenix-Konventionen in zwei klar getrennte Bereic
 
 === Geschäftslogik
 
-Das Modul `Parking.ParkingSystem` bildet den zentralen Einstiegspunkt für alle fachlichen Operationen. Es koordiniert die übrigen Module und stellt eine definierte Schnittstelle für die Webschicht bereit. Dazu gehören das Erstellen und Verwalten von Tickets, die Authentifizierung und Abwicklung von Dauermietern, die Gebührenberechnung sowie die Freigabe von Parkplätzen bei der Ausfahrt. Das Modul entspricht dem Fassaden-Muster: Die Webschicht interagiert ausschliesslich mit diesem Modul und nicht direkt mit den darunter liegenden Schemata oder Diensten.
+Die Geschäftslogik ist auf vier spezialisierte Kontextmodule aufgeteilt, welche die Webschicht als definierte Schnittstelle nutzt.
 
-Die Domänenentitäten sind als Ecto-Schemata implementiert. 
+*Parking.GuestParking*
+
+Koordiniert den Parkierungsprozess für Gelegenheitsnutzer: Erstellen von Tickets, Zuweisung von Parkplätzen mit ausgeglichener Stockwerkverteilung, Zahlungsabwicklung und Registrierung der Ausfahrt.
+
+*Parking.PermanentParking*
+
+Kapselt alle Operationen für Dauermieter: Authentifizierung, Ein- und Ausfahrt, Erstellung neuer Dauermieter, Mietabrechnung sowie Platzzuweisung.
+
+*Parking.GarageStats*
+
+Berechnet und liefert Belegungs- und Zustandsdaten eines Parkhauses, aufgeschlüsselt nach Parkplatztypen.
+
+*Parking.Pricing.Calculator*
+
+Übernimmt die Gebührenberechnung: Liest die Tarif-Konfiguration aus der Datenbank, wählt die passende Pricing-Strategie und delegiert die Berechnung an die entsprechende Implementierung.
+
+Die Domänenentitäten sind als Ecto-Schemata implementiert.
 
 *Parking.ParkingGarage*
 
@@ -105,7 +121,7 @@ Die Gebührenberechnung ist über ein Elixir-Behaviour (`Parking.Pricing.Pricing
 
 `Parking.Pricing.TimeBasedPricing` berechnet die Gebühr anhand der Parkdauer und konfigurierbarer Zeitslots. Die Abrechnung erfolgt auf Viertelstundenbasis, wobei der zu Beginn der jeweiligen Viertelstunde geltende Tarif für die gesamte Viertelstunde gilt. Für Wochenenden und Feiertage können separate Zeitslot-Listen konfiguriert werden. Feiertage werden als Datumsliste in der Tarif-Konfiguration hinterlegt. Überschreitet die Parkdauer 24 Stunden, wird automatisch auf die Tagespauschale umgestellt. `Parking.Pricing.FlatRatePricing` bietet eine vereinfachte Alternative, die eine Tagespauschale unabhängig von der Tageszeit anwendet. Die Konfiguration der jeweiligen Strategie wird aus den typisierten Untertabellen gelesen.
 
-Die Wahl der anzuwendenden Strategie erfolgt im `ParkingSystem` anhand des `type`-Felds des Tarif-Datensatzes.
+Die Wahl der anzuwendenden Strategie erfolgt im `Calculator` anhand des `type`-Felds des Tarif-Datensatzes.
 
 === Serviceschicht
 
@@ -255,7 +271,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       columns: 2,
       [*ID*], [TC-01],
       [*Beschreibung*], [Einfahrt erzeugt Ticket],
-      [*Vorgehen*], [`ParkingSystem.create_ticket/2` wird mit einer gültigen Garage-ID und Tarif-ID aufgerufen.],
+      [*Vorgehen*], [`GuestParking.create_ticket/2` wird mit einer gültigen Garage-ID und Tarif-ID aufgerufen.],
       [*Erwartetes Ergebnis*], [Ticket wird erstellt und gespeichert],
       [*Tatsächliches Ergebnis*], [Ticket mit gültiger UUID und Einfahrtszeit wird erstellt. Ein aktives Ticket für den zugehörigen Parkplatz ist in der Datenbank vorhanden.],
       [*Status*], [Bestanden],
@@ -357,7 +373,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       columns: 2,
       [*ID*], [TC-07],
       [*Beschreibung*], [Dauermieter Zugang erlaubt],
-      [*Vorgehen*], [`ParkingSystem.authenticate_permanent_user/1` wird mit dem korrekten Zugangscode eines nicht gesperrten Dauermieters aufgerufen.],
+      [*Vorgehen*], [`PermanentParking.authenticate_permanent_user/1` wird mit dem korrekten Zugangscode eines nicht gesperrten Dauermieters aufgerufen.],
       [*Erwartetes Ergebnis*], [Schranke öffnet],
       [*Tatsächliches Ergebnis*], [Authentifizierung erfolgreich. Dauermieter-Datensatz wird zurückgegeben.],
       [*Status*], [Bestanden],
@@ -391,7 +407,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       columns: 2,
       [*ID*], [TC-09],
       [*Beschreibung*], [Bezahlung erfolgreich],
-      [*Vorgehen*], [`ParkingSystem.process_payment/1` wird mit einem bestehenden, unbezahlten Ticket aufgerufen.],
+      [*Vorgehen*], [`GuestParking.process_payment/1` wird mit einem bestehenden, unbezahlten Ticket aufgerufen.],
       [*Erwartetes Ergebnis*], [Ticket wird als bezahlt markiert],
       [*Tatsächliches Ergebnis*], [Ein Zahlungsdatensatz wird in der Datenbank erstellt. Das Ticket gilt damit als bezahlt.],
       [*Status*], [Bestanden],
@@ -425,7 +441,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       columns: 2,
       [*ID*], [TC-11],
       [*Beschreibung*], [Ausfahrt mit gültigem Ticket],
-      [*Vorgehen*], [Nach Einfahrt und Bezahlung wird `ParkingSystem.register_exit/1` aufgerufen.],
+      [*Vorgehen*], [Nach Einfahrt und Bezahlung wird `GuestParking.register_exit/1` aufgerufen.],
       [*Erwartetes Ergebnis*], [Ausfahrt wird erlaubt],
       [*Tatsächliches Ergebnis*], [Ausfahrtszeit wird auf dem Ticket gesetzt. Das Ticket ist damit nicht mehr aktiv; der Parkplatz gilt als frei.],
       [*Status*], [Bestanden],

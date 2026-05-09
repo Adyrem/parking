@@ -14,7 +14,9 @@ package "lib/parking_web/" {
 }
 
 package "lib/parking/" {
-  class ParkingSystem <<Facade>>
+  class GuestParking
+  class PermanentParking
+  class GarageStats
 
   package "users/" {
     class User
@@ -29,6 +31,7 @@ package "lib/parking/" {
     class TimeBasedConfig
     class DailyRateConfig
     class MonthlyRentConfig
+    class Calculator
   }
 
   package "service/" {
@@ -50,15 +53,25 @@ package "lib/parking/" {
   class Repo
 }
 
-ParkingLive --> ParkingSystem
-AdminLive --> ParkingSystem
-StatsLive --> ParkingSystem
+ParkingLive --> GuestParking
+ParkingLive --> PermanentParking
+AdminLive --> PermanentParking
+StatsLive --> GarageStats
 StatsLive --> StatisticsService
 
-ParkingSystem --> PaymentService
-ParkingSystem --> AccountingService
-ParkingSystem --> PricingStrategy
-ParkingSystem --> Repo
+GuestParking --> PaymentService
+GuestParking --> AccountingService
+GuestParking --> Calculator
+GuestParking --> Repo
+
+PermanentParking --> PaymentService
+PermanentParking --> AccountingService
+PermanentParking --> Repo
+
+GarageStats --> Repo
+
+Calculator --> PricingStrategy
+Calculator --> Repo
 
 TimeBasedPricing ..|> PricingStrategy
 FlatRatePricing ..|> PricingStrategy

@@ -13,7 +13,7 @@ defmodule Parking.Pricing.TimeBasedPricing do
     end_time = ticket.exit_time || NaiveDateTime.utc_now()
     duration = NaiveDateTime.diff(end_time, ticket.entry_time, :second)
 
-    if duration > 24 * 3600 do
+    if duration > 24 * 3600 and strategy.daily_rate do
       days = Float.ceil(duration / (24 * 3600))
       Float.round(days * strategy.daily_rate, 2)
     else
@@ -67,12 +67,7 @@ defmodule Parking.Pricing.TimeBasedPricing do
   end
 
   defp holiday?(date, strategy) do
-    Enum.any?(strategy.holidays || [], fn holiday ->
-      case Date.from_iso8601(holiday) do
-        {:ok, holiday_date} -> holiday_date == date
-        _ -> false
-      end
-    end)
+    Enum.any?(strategy.holidays || [], &(&1 == date))
   end
 
   defp weekend?(date) do

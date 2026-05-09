@@ -5,10 +5,12 @@ defmodule ParkingWeb.ParkingLive do
   import Ecto.Query
 
   alias Parking.Repo
-  alias Parking.ParkingSystem
   alias Parking.ParkingGarage
   alias Parking.Payment
   alias Parking.Ticket
+  alias Parking.GuestParking
+  alias Parking.PermanentParking
+  alias Parking.Pricing.Calculator
 
   def mount(params, _session, socket) do
     garage_id = params["garage_id"] || get_default_garage_id()
@@ -48,17 +50,16 @@ defmodule ParkingWeb.ParkingLive do
   end
 
   def handle_event("enter", _, socket) do
-    case ParkingSystem.create_ticket(socket.assigns.garage_id, socket.assigns.pricing_id) do
+    case GuestParking.create_ticket(socket.assigns.garage_id, socket.assigns.pricing_id) do
       {:ok, ticket} ->
         {:noreply,
          assign(socket,
            ticket: ticket,
            ticket_paid: false,
            fee: nil,
-           current_fee: ParkingSystem.calculate_fee(ticket),
+           current_fee: Calculator.calculate_fee(ticket),
            message: "Einfahrt erfolgreich",
-           stats: ParkingSystem.get_garage_stats(socket.assigns.garage_id),
-           parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
+           parking_status: GuestParking.guest_parking_status(socket.assigns.garage_id)
          )}
 
       {:error, :no_available_spots} ->
@@ -75,7 +76,7 @@ defmodule ParkingWeb.ParkingLive do
         {:noreply, assign(socket, message: "Kein Ticket vorhanden")}
 
       ticket ->
-        case ParkingSystem.process_payment(ticket) do
+        case GuestParking.process_payment(ticket) do
           {:ok, paid_ticket} ->
             fee =
               Repo.one(
@@ -89,8 +90,7 @@ defmodule ParkingWeb.ParkingLive do
                fee: fee,
                current_fee: nil,
                message: "Bezahlung erfolgreich",
-               stats: ParkingSystem.get_garage_stats(socket.assigns.garage_id),
-               parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
+               parking_status: GuestParking.guest_parking_status(socket.assigns.garage_id)
              )}
 
           {:error, :payment_failed} ->
@@ -108,13 +108,13 @@ defmodule ParkingWeb.ParkingLive do
         {:noreply, assign(socket, message: "Kein Ticket vorhanden")}
 
       ticket ->
-        case ParkingSystem.register_exit(ticket) do
+        case GuestParking.register_exit(ticket) do
           {:ok, updated_ticket} ->
             {:noreply,
              assign(socket,
                ticket: updated_ticket,
                message: "Ausfahrt registriert",
-               parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
+               parking_status: GuestParking.guest_parking_status(socket.assigns.garage_id)
              )}
 
           {:error, reason} ->
@@ -124,19 +124,20 @@ defmodule ParkingWeb.ParkingLive do
   end
 
   def handle_event("scan_ticket", %{"uuid" => uuid}, socket) do
-    case ParkingSystem.find_ticket(uuid) do
+    case GuestParking.find_ticket(uuid) do
       nil ->
         {:noreply, assign(socket, message: "Ticket nicht gefunden")}
 
       ticket ->
-        ticket_paid = Repo.exists?(from p in Payment, where: p.ticket_id == ^ticket.id)
+        fee = Repo.one(from p in Payment, where: p.ticket_id == ^ticket.id, select: p.amount)
+        ticket_paid = fee != nil
 
         {:noreply,
          assign(socket,
            ticket: ticket,
            ticket_paid: ticket_paid,
-           fee: nil,
-           current_fee: ParkingSystem.calculate_fee(ticket),
+           fee: fee,
+           current_fee: if(ticket_paid, do: nil, else: Calculator.calculate_fee(ticket)),
            message: "Ticket #{String.slice(uuid, 0..7)}... geladen"
          )}
     end
@@ -149,15 +150,14 @@ defmodule ParkingWeb.ParkingLive do
          assign(socket, message: "Fehler: Bitte melden Sie sich zuerst mit einer Karte an")}
 
       perm_user ->
-        case ParkingSystem.enter_permanent_user(perm_user) do
+        case PermanentParking.enter_permanent_user(perm_user) do
           {:ok, updated_user} ->
             {:noreply,
              assign(socket,
                authenticated_permanent_user: updated_user,
                perm_user_parked: true,
                message: "Einfahrt für Dauerparker registriert",
-               stats: ParkingSystem.get_garage_stats(socket.assigns.garage_id),
-               parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
+               parking_status: GuestParking.guest_parking_status(socket.assigns.garage_id)
              )}
 
           {:error, reason} ->
@@ -167,7 +167,7 @@ defmodule ParkingWeb.ParkingLive do
   end
 
   def handle_event("authenticate_card", %{"card_uuid" => card_uuid}, socket) do
-    case ParkingSystem.authenticate_permanent_user(card_uuid) do
+    case PermanentParking.authenticate_permanent_user(card_uuid) do
       {:ok, perm_user} ->
         perm_user_parked =
           Repo.exists?(
@@ -197,15 +197,14 @@ defmodule ParkingWeb.ParkingLive do
          assign(socket, message: "Fehler: Bitte melden Sie sich zuerst mit einer Karte an")}
 
       perm_user ->
-        case ParkingSystem.exit_permanent_user(perm_user) do
+        case PermanentParking.exit_permanent_user(perm_user) do
           {:ok, updated_user} ->
             {:noreply,
              assign(socket,
                authenticated_permanent_user: updated_user,
                perm_user_parked: false,
                message: "Ausfahrt für Dauerparker registriert",
-               stats: ParkingSystem.get_garage_stats(socket.assigns.garage_id),
-               parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
+               parking_status: GuestParking.guest_parking_status(socket.assigns.garage_id)
              )}
 
           {:error, reason} ->
@@ -247,15 +246,14 @@ defmodule ParkingWeb.ParkingLive do
 
   defp assign_garage(socket, garage) do
     pricing =
-      ParkingSystem.get_garage_pricing(garage.id) ||
+      Calculator.get_garage_pricing(garage.id) ||
         raise "No pricing configured for this garage"
 
     assign(socket,
       garage: garage,
       garage_id: garage.id,
       pricing_id: pricing.id,
-      stats: ParkingSystem.get_garage_stats(garage.id),
-      parking_status: ParkingSystem.guest_parking_status(garage.id)
+      parking_status: GuestParking.guest_parking_status(garage.id)
     )
   end
 
