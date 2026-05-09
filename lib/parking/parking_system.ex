@@ -20,7 +20,6 @@ defmodule Parking.ParkingSystem do
   @doc "Create a new ticket, assign a parking spot, and persist to database"
   def create_ticket(garage_id, pricing_id) do
     Repo.transaction(fn ->
-      # Get the first guest-available spot
       spot =
         guest_spot_query(garage_id)
         |> limit(1)
@@ -35,32 +34,28 @@ defmodule Parking.ParkingSystem do
             Ticket.changeset(%Ticket{}, %{
               "entry_time" => DateTime.truncate(DateTime.utc_now(), :second),
               "spot_id" => spot.id,
-              "pricing_id" => pricing_id,
-              "paid" => false
+              "pricing_id" => pricing_id
             })
 
           with {:ok, ticket} <- Repo.insert(ticket_changeset) do
-            spot_changeset =
-              ParkingSpot.changeset(spot, %{is_occupied: true})
-
-            with {:ok, _} <- Repo.update(spot_changeset) do
-              Repo.preload(ticket, [:spot, :pricing])
-            end
+            Repo.preload(ticket, [:spot, :pricing])
           end
       end
     end)
   end
 
   defp guest_spot_query(garage_id) do
-    # Count spots per level that are unavailable to guests:
-    # either currently occupied, or permanently reserved (even when temporarily free).
+    # A spot is occupied if it has an active ticket (exit_time IS NULL).
+    active_spot_ids = from(t in Ticket, where: is_nil(t.exit_time), select: t.spot_id)
+    perm_spot_ids = from(p in PermanentUser, select: p.spot_id)
+
     level_occupancy =
       from(s in ParkingSpot,
         join: l in Level,
         on: s.level_id == l.id,
         where:
           l.garage_id == ^garage_id and
-            (s.is_occupied or s.id in subquery(from p in PermanentUser, select: p.spot_id)),
+            (s.id in subquery(active_spot_ids) or s.id in subquery(perm_spot_ids)),
         group_by: l.id,
         select: %{level_id: l.id, occupied_count: count(s.id)}
       )
@@ -71,8 +66,9 @@ defmodule Parking.ParkingSystem do
       left_join: lo in subquery(level_occupancy),
       on: lo.level_id == l.id,
       where:
-        l.garage_id == ^garage_id and not s.is_occupied and
-          s.id not in subquery(from p in PermanentUser, select: p.spot_id),
+        l.garage_id == ^garage_id and
+          s.id not in subquery(active_spot_ids) and
+          s.id not in subquery(perm_spot_ids),
       order_by: [asc: coalesce(lo.occupied_count, 0), asc: s.id],
       select: s
     )
@@ -80,14 +76,17 @@ defmodule Parking.ParkingSystem do
 
   @doc "Get the guest parking status excluding permanent reserved spots"
   def guest_parking_status(garage_id) do
+    perm_spot_ids = from(p in PermanentUser, select: p.spot_id)
+    active_spot_ids = from(t in Ticket, where: is_nil(t.exit_time), select: t.spot_id)
+
     spots =
       from(s in ParkingSpot,
         join: l in Level,
         on: s.level_id == l.id,
         where:
           l.garage_id == ^garage_id and
-            s.id not in subquery(from p in PermanentUser, select: p.spot_id),
-        select: %{is_occupied: s.is_occupied}
+            s.id not in subquery(perm_spot_ids),
+        select: %{is_occupied: s.id in subquery(active_spot_ids)}
       )
       |> Repo.all()
 
@@ -182,62 +181,46 @@ defmodule Parking.ParkingSystem do
     )
   end
 
-  @doc "Process payment for a ticket - updates ticket and creates payment record"
+  @doc "Process payment for a ticket - creates a payment record"
   def process_payment(ticket) do
     Repo.transaction(fn ->
       amount = calculate_fee(ticket)
 
-      # Try to process payment — rollback the transaction on failure
       case PaymentService.process(nil, amount) do
         {:ok, _} -> :ok
         {:error, reason} -> Repo.rollback(reason)
       end
 
-      # Update ticket to mark as paid
-      ticket_changeset =
-        Ticket.changeset(ticket, %{paid: true})
+      payment_changeset =
+        Payment.changeset(%Payment{}, %{
+          "amount" => Decimal.from_float(amount),
+          "ticket_id" => ticket.id
+        })
 
-      with {:ok, updated_ticket} <- Repo.update(ticket_changeset) do
-        # Record payment
-        payment_changeset =
-          Payment.changeset(%Payment{}, %{
-            "amount" => Decimal.from_float(amount),
-            "timestamp" => DateTime.truncate(DateTime.utc_now(), :second),
-            "ticket_id" => updated_ticket.id
-          })
-
-        with {:ok, _payment} <- Repo.insert(payment_changeset) do
-          # Record in accounting service
-          AccountingService.record_transaction(nil, amount)
-          updated_ticket
-        end
+      with {:ok, _payment} <- Repo.insert(payment_changeset) do
+        AccountingService.record_transaction(nil, amount)
+        ticket
       end
     end)
   end
 
-  @doc "Register vehicle exit - update exit time and free the spot"
+  @doc "Register vehicle exit - update exit time on the ticket"
   def register_exit(ticket) do
     Repo.transaction(fn ->
-      # Preload spot
       ticket = Repo.preload(ticket, :spot)
 
+      ticket_paid? = Repo.exists?(from p in Payment, where: p.ticket_id == ^ticket.id)
+
       cond do
-        ticket.permanent_user_id == nil and not ticket.paid ->
+        ticket.permanent_user_id == nil and not ticket_paid? ->
           Repo.rollback(:payment_required)
 
         true ->
-          # Update ticket with exit time
           ticket_changeset =
             Ticket.changeset(ticket, %{exit_time: DateTime.truncate(DateTime.utc_now(), :second)})
 
           with {:ok, updated_ticket} <- Repo.update(ticket_changeset) do
-            # Free up the parking spot
-            spot_changeset =
-              ParkingSpot.changeset(updated_ticket.spot, %{is_occupied: false})
-
-            with {:ok, _spot} <- Repo.update(spot_changeset) do
-              updated_ticket
-            end
+            updated_ticket
           end
       end
     end)
@@ -261,18 +244,29 @@ defmodule Parking.ParkingSystem do
     |> Repo.all()
   end
 
-  @doc "List permanent users for a specific garage"
+  @doc "List permanent users for a specific garage, with is_parked derived from active tickets"
   def list_permanent_users(garage_id) do
-    from(p in Parking.Users.PermanentUser,
-      join: s in ParkingSpot,
-      on: p.spot_id == s.id,
-      join: l in Level,
-      on: s.level_id == l.id,
-      where: l.garage_id == ^garage_id,
-      preload: [:spot, :user],
-      order_by: [asc: p.id]
-    )
-    |> Repo.all()
+    users =
+      from(p in Parking.Users.PermanentUser,
+        join: s in ParkingSpot,
+        on: p.spot_id == s.id,
+        join: l in Level,
+        on: s.level_id == l.id,
+        where: l.garage_id == ^garage_id,
+        preload: [:spot, :user],
+        order_by: [asc: p.id]
+      )
+      |> Repo.all()
+
+    parked_ids =
+      from(t in Ticket,
+        where: t.permanent_user_id in ^Enum.map(users, & &1.id) and is_nil(t.exit_time),
+        select: t.permanent_user_id
+      )
+      |> Repo.all()
+      |> MapSet.new()
+
+    Enum.map(users, fn user -> %{user | is_parked: user.id in parked_ids} end)
   end
 
   @doc "Authenticate a permanent user by access code"
@@ -322,7 +316,6 @@ defmodule Parking.ParkingSystem do
         Ticket.changeset(%Ticket{}, %{
           "entry_time" => now,
           "exit_time" => now,
-          "paid" => true,
           "spot_id" => perm_user.spot_id,
           "permanent_user_id" => perm_user.id
         })
@@ -330,7 +323,6 @@ defmodule Parking.ParkingSystem do
 
       Payment.changeset(%Payment{}, %{
         "amount" => Decimal.from_float(monthly_rent),
-        "timestamp" => now,
         "ticket_id" => ticket.id
       })
       |> Repo.insert!()
@@ -387,16 +379,23 @@ defmodule Parking.ParkingSystem do
     %Date{year: year, month: month, day: days}
   end
 
-  @doc "Mark the permanent user's assigned spot as occupied"
+  @doc "Mark the permanent user as entered — creates an active ticket on their spot"
   def enter_permanent_user(%Parking.Users.PermanentUser{} = perm_user) do
     Repo.transaction(fn ->
       perm_user = Repo.preload(perm_user, :spot)
+
+      active_ticket =
+        Repo.one(
+          from t in Ticket,
+            where: t.permanent_user_id == ^perm_user.id and is_nil(t.exit_time),
+            limit: 1
+        )
 
       cond do
         perm_user.spot == nil ->
           Repo.rollback(:no_assigned_spot)
 
-        perm_user.spot.is_occupied ->
+        active_ticket != nil ->
           Repo.rollback(:already_parked)
 
         true ->
@@ -404,56 +403,43 @@ defmodule Parking.ParkingSystem do
             Ticket.changeset(%Ticket{}, %{
               "entry_time" => DateTime.truncate(DateTime.utc_now(), :second),
               "spot_id" => perm_user.spot.id,
-              "permanent_user_id" => perm_user.id,
-              "paid" => true
+              "permanent_user_id" => perm_user.id
             })
 
           with {:ok, _ticket} <- Repo.insert(ticket_changeset) do
-            perm_user.spot
-            |> Parking.ParkingSpot.changeset(%{is_occupied: true})
-            |> Repo.update!()
-
             reload_permanent_user(perm_user.id)
           end
       end
     end)
   end
 
-  @doc "Release the permanent user's assigned spot"
+  @doc "Release the permanent user's spot — closes the active ticket"
   def exit_permanent_user(%Parking.Users.PermanentUser{} = perm_user) do
     Repo.transaction(fn ->
       perm_user = Repo.preload(perm_user, :spot)
+
+      active_ticket =
+        Repo.one(
+          from t in Ticket,
+            where: t.permanent_user_id == ^perm_user.id and is_nil(t.exit_time),
+            limit: 1
+        )
 
       cond do
         perm_user.spot == nil ->
           Repo.rollback(:no_assigned_spot)
 
-        not perm_user.spot.is_occupied ->
+        active_ticket == nil ->
           Repo.rollback(:not_parked)
 
         true ->
-          active_ticket =
-            from(t in Ticket,
-              where: t.permanent_user_id == ^perm_user.id and is_nil(t.exit_time),
-              limit: 1
-            )
-            |> Repo.one()
+          ticket_changeset =
+            Ticket.changeset(active_ticket, %{
+              exit_time: DateTime.truncate(DateTime.utc_now(), :second)
+            })
 
-          if is_nil(active_ticket) do
-            Repo.rollback(:ticket_not_found)
-          else
-            ticket_changeset =
-              Ticket.changeset(active_ticket, %{
-                exit_time: DateTime.truncate(DateTime.utc_now(), :second)
-              })
-
-            with {:ok, _updated_ticket} <- Repo.update(ticket_changeset) do
-              perm_user.spot
-              |> Parking.ParkingSpot.changeset(%{is_occupied: false})
-              |> Repo.update!()
-
-              reload_permanent_user(perm_user.id)
-            end
+          with {:ok, _updated_ticket} <- Repo.update(ticket_changeset) do
+            reload_permanent_user(perm_user.id)
           end
       end
     end)
@@ -493,15 +479,16 @@ defmodule Parking.ParkingSystem do
         nil
 
       garage ->
-        # Calculate stats per level
         levels_with_stats =
           Enum.map(garage.levels, fn level ->
             spots_with_type =
               Enum.map(level.spots, fn spot ->
+                active_ticket = Enum.find(spot.tickets, &is_nil(&1.exit_time))
+
                 type =
                   cond do
                     spot.permanent_user != nil -> :permanent
-                    spot.is_occupied -> :guest_occupied
+                    active_ticket != nil -> :guest_occupied
                     true -> :guest_available
                   end
 
@@ -530,11 +517,22 @@ defmodule Parking.ParkingSystem do
             }
           end)
 
-        # Calculate global stats
         all_spots = Enum.flat_map(garage.levels, & &1.spots)
         permanent_spots = Enum.count(all_spots, &(&1.permanent_user != nil))
-        guest_occupied = Enum.count(all_spots, &(&1.is_occupied and &1.permanent_user == nil))
-        guest_available = Enum.count(all_spots, &(!&1.is_occupied and &1.permanent_user == nil))
+
+        guest_occupied =
+          Enum.count(
+            all_spots,
+            &(Enum.any?(&1.tickets, fn t -> is_nil(t.exit_time) end) and &1.permanent_user == nil)
+          )
+
+        guest_available =
+          Enum.count(
+            all_spots,
+            &(not Enum.any?(&1.tickets, fn t -> is_nil(t.exit_time) end) and
+                &1.permanent_user == nil)
+          )
+
         total_spots = Enum.count(all_spots)
 
         %{
@@ -592,7 +590,6 @@ defmodule Parking.ParkingSystem do
             Ticket.changeset(%Ticket{}, %{
               "entry_time" => now,
               "exit_time" => now,
-              "paid" => true,
               "spot_id" => spot.id,
               "permanent_user_id" => perm_user.id
             })
@@ -600,7 +597,6 @@ defmodule Parking.ParkingSystem do
 
           Payment.changeset(%Payment{}, %{
             "amount" => Decimal.from_float(monthly_rent),
-            "timestamp" => now,
             "ticket_id" => ticket.id
           })
           |> Repo.insert!()
@@ -617,12 +613,18 @@ defmodule Parking.ParkingSystem do
 
   @doc "List spots in a garage not reserved by any permanent user and not occupied by a guest"
   def list_unassigned_spots(garage_id) do
+    active_guest_spot_ids =
+      from(t in Ticket,
+        where: is_nil(t.exit_time) and is_nil(t.permanent_user_id),
+        select: t.spot_id
+      )
+
     from(s in ParkingSpot,
       join: l in Level,
       on: s.level_id == l.id,
       where:
         l.garage_id == ^garage_id and
-          not s.is_occupied and
+          s.id not in subquery(active_guest_spot_ids) and
           s.id not in subquery(
             from p in PermanentUser, where: not is_nil(p.spot_id), select: p.spot_id
           ),

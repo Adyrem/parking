@@ -41,3 +41,7 @@ Die Abrechnung erfolgt auf Viertelstundenbasis. Der Tarif zu Beginn einer Vierte
 == Lastenheft
 
 Das Lastenheft ist als separater Anhang verfügbar.
+
+== Controlling Berichte
+
+Die Controlling Berichte sind als separate Anhänge verfügbar.

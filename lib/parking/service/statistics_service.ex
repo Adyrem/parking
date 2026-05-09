@@ -17,7 +17,7 @@ defmodule Parking.Services.StatisticsService do
         join: ps in assoc(t, :spot),
         join: l in assoc(ps, :level),
         where:
-          p.timestamp >= ^start_datetime and p.timestamp <= ^end_datetime and
+          t.entry_time >= ^start_datetime and t.entry_time <= ^end_datetime and
             l.garage_id == ^garage_id,
         select: %{
           amount: p.amount,

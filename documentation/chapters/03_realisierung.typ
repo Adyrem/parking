@@ -79,15 +79,15 @@ Stellt ein Stockwerk innerhalb eines Parkhauses mit Stockwerknummer und Parkplat
 
 *Parking.ParkingSpot*
 
-Entspricht einem einzelnen Parkplatz und hält dessen Belegungsstatus sowie eine lesbare Platznummer (`number`). Die Platznummer wird nach dem Schema Stockwerknummer × 100 + laufende Nummer vergeben, sodass Platz 3 auf Stockwerk 2 die Nummer 203 trägt. Im Konzept war ein dreistufiger Lebenszyklus (frei, reserviert, belegt) vorgesehen. In der Umsetzung wurde dieser auf den boolean Wert Belegungsstatus (`is_occupied`) vereinfacht, da eine explizite Reservierungsphase im Prototyp nicht benötigt wird. Die Zuweisung und Belegung eines Parkplatzes erfolgt beim Erstellen des Tickets.
+Entspricht einem einzelnen Parkplatz mit einer lesbaren Platznummer (`number`). Die Platznummer wird nach dem Schema Stockwerknummer × 100 + laufende Nummer vergeben, sodass Platz 3 auf Stockwerk 2 die Nummer 203 trägt. Der Belegungsstatus wird nicht als eigenes Feld gespeichert, sondern zur Laufzeit aus aktiven Tickets abgeleitet: Ein Parkplatz gilt als belegt, wenn ein Ticket mit dieser Platz-ID existiert, dessen `exit_time` noch nicht gesetzt ist. Die Zuweisung eines Parkplatzes erfolgt beim Erstellen des Tickets.
 
 *Parking.Ticket*
 
-Ist das Parkticket mit Einfahrtszeit, Ausfahrtszeit, Bezahlstatus sowie Verknüpfungen zu Parkplatz, Tarif und optional einem Dauermieter.
+Ist das Parkticket mit Einfahrtszeit, Ausfahrtszeit sowie Verknüpfungen zu Parkplatz, Tarif und optional einem Dauermieter. Der Bezahlstatus ergibt sich aus der Existenz eines verknüpften `Payment`-Datensatzes.
 
 *Parking.Payment*
 
-Speichert Zahlungsdatensätze mit Betrag und Zeitstempel.
+Speichert Zahlungsdatensätze mit Betrag und Verweis auf das Ticket. Der Zeitstempel wird automatisch über das Ecto-Feld `inserted_at` gesetzt.
 
 *Parking.Pricing*
 
@@ -196,14 +196,14 @@ Die Persistenz erfolgt über eine relationale PostgreSQL-Datenbank. Das Schema w
     table.header([*Tabelle*], [*Beschreibung*]),
     [`parking_garage`], [Parkhaus mit Name],
     [`level`], [Stockwerk mit Nummer und Verweis auf das Parkhaus],
-    [`parking_spot`], [Parkplatz mit lesbarer Platznummer, Belegungsstatus und Verweis auf das Stockwerk],
+    [`parking_spot`], [Parkplatz mit lesbarer Platznummer und Verweis auf das Stockwerk; Belegungsstatus wird aus aktiven Tickets abgeleitet],
     [`occasional_user`], [Gelegenheitsnutzer als Stub-Entität; enthält nur die ID-Verknüpfung zur User-Tabelle, wird im Parkvorgang nicht aktiv befüllt],
-    [`ticket`], [Parkticket mit UUID-Primärschlüssel, Ein-/Ausfahrtszeit, Bezahlstatus sowie Verweisen auf Parkplatz, Tarif und optional Dauermieter],
+    [`ticket`], [Parkticket mit UUID-Primärschlüssel, Ein-/Ausfahrtszeit sowie Verweisen auf Parkplatz, Tarif und optional Dauermieter; Bezahlstatus ergibt sich aus verknüpftem `Payment`-Datensatz],
     [`pricing`], [Tarif-Eintrag mit Typ (`time_based`, `daily_rate`, `monthly_rent`), verknüpft mit einem Parkhaus],
     [`time_based_pricing`], [Konfiguration für zeitbasierte Tarife: Zeitslots, Wochenend- und Feiertagstarife, Tagespauschale],
     [`daily_rate_pricing`], [Konfiguration für Tagespauschalen-Tarife: einheitliche Tagesrate],
     [`monthly_rent_pricing`], [Konfiguration für Monatsmiete pro Parkhaus: monatlicher Mietbetrag],
-    [`payment`], [Zahlungsdatensatz mit Betrag, Zeitstempel und Verweis auf das Ticket],
+    [`payment`], [Zahlungsdatensatz mit Betrag und Verweis auf das Ticket; Zeitstempel über `inserted_at`],
     [`user`], [Basisentität für alle Benutzer mit Typenfeld],
     [`permanent_user`], [Dauermieter mit Zugangscode, Sperrstatus, Mietdaten und zugewiesenem Parkplatz],
     [`settings`], [Schlüssel-Wert-Tabelle für systemweite Konfigurationsparameter wie das Admin-Passwort],
@@ -257,7 +257,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       [*Beschreibung*], [Einfahrt erzeugt Ticket],
       [*Vorgehen*], [`ParkingSystem.create_ticket/2` wird mit einer gültigen Garage-ID und Tarif-ID aufgerufen.],
       [*Erwartetes Ergebnis*], [Ticket wird erstellt und gespeichert],
-      [*Tatsächliches Ergebnis*], [Ticket mit gültiger UUID und Einfahrtszeit wird erstellt. Der zugehörige Parkplatz wird als belegt markiert.],
+      [*Tatsächliches Ergebnis*], [Ticket mit gültiger UUID und Einfahrtszeit wird erstellt. Ein aktives Ticket für den zugehörigen Parkplatz ist in der Datenbank vorhanden.],
       [*Status*], [Bestanden],
       [*Referenz*], [F-04, F-05],
     ),
@@ -274,7 +274,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       [*Beschreibung*], [Parkplatz wird zugewiesen],
       [*Vorgehen*], [Nach der Einfahrt wird der dem Ticket zugewiesene Parkplatz aus der Datenbank gelesen.],
       [*Erwartetes Ergebnis*], [Freier Parkplatz wird belegt],
-      [*Tatsächliches Ergebnis*], [Parkplatz ist als belegt markiert (`is_occupied: true`).],
+      [*Tatsächliches Ergebnis*], [Ein aktives Ticket (ohne `exit_time`) ist dem Parkplatz zugewiesen. Der Parkplatz gilt damit als belegt.],
       [*Status*], [Bestanden],
       [*Referenz*], [F-07, F-16],
     ),
@@ -393,7 +393,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       [*Beschreibung*], [Bezahlung erfolgreich],
       [*Vorgehen*], [`ParkingSystem.process_payment/1` wird mit einem bestehenden, unbezahlten Ticket aufgerufen.],
       [*Erwartetes Ergebnis*], [Ticket wird als bezahlt markiert],
-      [*Tatsächliches Ergebnis*], [Ticket erhält `paid: true`. Ein Zahlungsdatensatz wird in der Datenbank erstellt.],
+      [*Tatsächliches Ergebnis*], [Ein Zahlungsdatensatz wird in der Datenbank erstellt. Das Ticket gilt damit als bezahlt.],
       [*Status*], [Bestanden],
       [*Referenz*], [F-10],
     ),
@@ -410,7 +410,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       [*Beschreibung*], [Bezahlung fehlgeschlagen],
       [*Vorgehen*], [Der `PaymentService` wird durch einen `FailingStub` ersetzt. Anschliessend wird `process_payment/1` aufgerufen.],
       [*Erwartetes Ergebnis*], [Fehlermeldung wird angezeigt],
-      [*Tatsächliches Ergebnis*], [`{:error, :payment_failed}` wird zurückgegeben. Die Transaktion wird zurückgerollt. Das Ticket bleibt unbezahlt und der Parkplatz belegt.],
+      [*Tatsächliches Ergebnis*], [`{:error, :payment_failed}` wird zurückgegeben. Die Transaktion wird zurückgerollt. Kein Zahlungsdatensatz wurde erstellt; das aktive Ticket bleibt bestehen.],
       [*Status*], [Bestanden],
       [*Referenz*], [NF-01],
     ),
@@ -427,7 +427,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       [*Beschreibung*], [Ausfahrt mit gültigem Ticket],
       [*Vorgehen*], [Nach Einfahrt und Bezahlung wird `ParkingSystem.register_exit/1` aufgerufen.],
       [*Erwartetes Ergebnis*], [Ausfahrt wird erlaubt],
-      [*Tatsächliches Ergebnis*], [Ausfahrtszeit wird auf dem Ticket gesetzt. Der Parkplatz wird als frei markiert.],
+      [*Tatsächliches Ergebnis*], [Ausfahrtszeit wird auf dem Ticket gesetzt. Das Ticket ist damit nicht mehr aktiv; der Parkplatz gilt als frei.],
       [*Status*], [Bestanden],
       [*Referenz*], [F-15],
     ),
@@ -444,7 +444,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       [*Beschreibung*], [Ausfahrt ohne Zahlung],
       [*Vorgehen*], [Nach der Einfahrt wird `register_exit/1` ohne vorherige Bezahlung aufgerufen.],
       [*Erwartetes Ergebnis*], [Ausfahrt wird verweigert],
-      [*Tatsächliches Ergebnis*], [`{:error, :payment_required}` wird zurückgegeben. Der Parkplatz bleibt belegt.],
+      [*Tatsächliches Ergebnis*], [`{:error, :payment_required}` wird zurückgegeben. Das aktive Ticket bleibt unverändert bestehen.],
       [*Status*], [Bestanden],
       [*Referenz*], [F-10],
     ),
@@ -529,7 +529,7 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
       [*Beschreibung*], [Daten bleiben konsistent],
       [*Vorgehen*], [Eine fehlgeschlagene Zahlung wird über den `FailingStub` simuliert. Anschliessend werden Ticket und Parkplatz aus der Datenbank gelesen.],
       [*Erwartetes Ergebnis*], [Keine inkonsistenten Zustände],
-      [*Tatsächliches Ergebnis*], [Ticket bleibt unbezahlt. Parkplatz bleibt belegt. Kein Zahlungsdatensatz wurde erstellt.],
+      [*Tatsächliches Ergebnis*], [Kein Zahlungsdatensatz wurde erstellt; das Ticket bleibt damit unbezahlt und das aktive Ticket unverändert.],
       [*Status*], [Bestanden],
       [*Referenz*], [NF-04, NF-07],
     ),

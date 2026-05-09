@@ -19,12 +19,16 @@ package "lib/parking/" {
   package "users/" {
     class User
     class PermanentUser
+    class OccasionalUser
   }
 
   package "pricing/" {
     interface PricingStrategy <<Behaviour>>
     class TimeBasedPricing
     class FlatRatePricing
+    class TimeBasedConfig
+    class DailyRateConfig
+    class MonthlyRentConfig
   }
 
   package "service/" {
@@ -40,6 +44,7 @@ package "lib/parking/" {
     class Ticket
     class Payment
     class Pricing
+    class Settings
   }
 
   class Repo

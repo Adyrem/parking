@@ -8,9 +8,9 @@ defmodule ParkingWeb.ParkingLive do
   alias Parking.ParkingSystem
   alias Parking.ParkingGarage
   alias Parking.Payment
+  alias Parking.Ticket
 
   def mount(params, _session, socket) do
-    # Get garage_id from params or default to first garage
     garage_id = params["garage_id"] || get_default_garage_id()
     garage_id = if is_binary(garage_id), do: String.to_integer(garage_id), else: garage_id
 
@@ -25,10 +25,12 @@ defmodule ParkingWeb.ParkingLive do
          |> assign(
            garages: Repo.all(ParkingGarage),
            ticket: nil,
+           ticket_paid: false,
            fee: nil,
            current_fee: nil,
            message: nil,
-           authenticated_permanent_user: nil
+           authenticated_permanent_user: nil,
+           perm_user_parked: false
          )
          |> assign_garage(garage)}
     end
@@ -51,6 +53,7 @@ defmodule ParkingWeb.ParkingLive do
         {:noreply,
          assign(socket,
            ticket: ticket,
+           ticket_paid: false,
            fee: nil,
            current_fee: ParkingSystem.calculate_fee(ticket),
            message: "Einfahrt erfolgreich",
@@ -73,15 +76,16 @@ defmodule ParkingWeb.ParkingLive do
 
       ticket ->
         case ParkingSystem.process_payment(ticket) do
-          {:ok, updated_ticket} ->
+          {:ok, paid_ticket} ->
             fee =
               Repo.one(
-                from p in Payment, where: p.ticket_id == ^updated_ticket.id, select: p.amount
+                from p in Payment, where: p.ticket_id == ^paid_ticket.id, select: p.amount
               )
 
             {:noreply,
              assign(socket,
-               ticket: updated_ticket,
+               ticket: paid_ticket,
+               ticket_paid: true,
                fee: fee,
                current_fee: nil,
                message: "Bezahlung erfolgreich",
@@ -125,9 +129,12 @@ defmodule ParkingWeb.ParkingLive do
         {:noreply, assign(socket, message: "Ticket nicht gefunden")}
 
       ticket ->
+        ticket_paid = Repo.exists?(from p in Payment, where: p.ticket_id == ^ticket.id)
+
         {:noreply,
          assign(socket,
            ticket: ticket,
+           ticket_paid: ticket_paid,
            fee: nil,
            current_fee: ParkingSystem.calculate_fee(ticket),
            message: "Ticket #{String.slice(uuid, 0..7)}... geladen"
@@ -147,6 +154,7 @@ defmodule ParkingWeb.ParkingLive do
             {:noreply,
              assign(socket,
                authenticated_permanent_user: updated_user,
+               perm_user_parked: true,
                message: "Einfahrt für Dauerparker registriert",
                stats: ParkingSystem.get_garage_stats(socket.assigns.garage_id),
                parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
@@ -161,9 +169,16 @@ defmodule ParkingWeb.ParkingLive do
   def handle_event("authenticate_card", %{"card_uuid" => card_uuid}, socket) do
     case ParkingSystem.authenticate_permanent_user(card_uuid) do
       {:ok, perm_user} ->
+        perm_user_parked =
+          Repo.exists?(
+            from t in Ticket,
+              where: t.permanent_user_id == ^perm_user.id and is_nil(t.exit_time)
+          )
+
         {:noreply,
          assign(socket,
            authenticated_permanent_user: perm_user,
+           perm_user_parked: perm_user_parked,
            message: "Dauerparker erfolgreich angemeldet"
          )}
 
@@ -187,6 +202,7 @@ defmodule ParkingWeb.ParkingLive do
             {:noreply,
              assign(socket,
                authenticated_permanent_user: updated_user,
+               perm_user_parked: false,
                message: "Ausfahrt für Dauerparker registriert",
                stats: ParkingSystem.get_garage_stats(socket.assigns.garage_id),
                parking_status: ParkingSystem.guest_parking_status(socket.assigns.garage_id)
@@ -202,6 +218,7 @@ defmodule ParkingWeb.ParkingLive do
     {:noreply,
      assign(socket,
        authenticated_permanent_user: nil,
+       perm_user_parked: false,
        message: nil
      )}
   end
@@ -255,7 +272,9 @@ defmodule ParkingWeb.ParkingLive do
          socket
          |> assign(
            authenticated_permanent_user: nil,
+           perm_user_parked: false,
            ticket: nil,
+           ticket_paid: false,
            fee: nil,
            current_fee: nil,
            message: nil

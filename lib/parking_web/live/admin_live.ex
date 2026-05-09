@@ -154,7 +154,7 @@ defmodule ParkingWeb.AdminLive do
   end
 
   def handle_event("assign_spot", %{"user_id" => _user_id, "spot_id" => ""}, socket) do
-    {:noreply, assign(socket, admin_error: "Bitte wählen Sie einen Stellplatz aus", admin_message: nil)}
+    {:noreply, assign(socket, admin_error: "Bitte wählen Sie einen Parkplatz aus", admin_message: nil)}
   end
 
   def handle_event("assign_spot", %{"user_id" => user_id, "spot_id" => spot_id}, socket) do
@@ -169,13 +169,13 @@ defmodule ParkingWeb.AdminLive do
            assign(socket,
              perm_users: ParkingSystem.list_permanent_users(garage_id),
              unassigned_spots: ParkingSystem.list_unassigned_spots(garage_id),
-             admin_message: "Stellplatz erfolgreich zugewiesen",
+             admin_message: "Parkplatz erfolgreich zugewiesen",
              admin_error: nil
            )}
 
         {:error, _} ->
           {:noreply,
-           assign(socket, admin_error: "Fehler beim Zuweisen des Stellplatzes", admin_message: nil)}
+           assign(socket, admin_error: "Fehler beim Zuweisen des Parkplatzes", admin_message: nil)}
       end
     else
       {:noreply, socket}

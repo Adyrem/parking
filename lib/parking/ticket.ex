@@ -9,7 +9,6 @@ defmodule Parking.Ticket do
   schema "ticket" do
     field :entry_time, :utc_datetime
     field :exit_time, :utc_datetime, default: nil
-    field :paid, :boolean, default: false
     belongs_to :spot, Parking.ParkingSpot, foreign_key: :spot_id, type: :id
     belongs_to :pricing, Parking.Pricing, foreign_key: :pricing_id, type: :id
 
@@ -23,7 +22,7 @@ defmodule Parking.Ticket do
 
   def changeset(ticket, attrs) do
     ticket
-    |> cast(attrs, [:entry_time, :exit_time, :paid, :spot_id, :pricing_id, :permanent_user_id])
+    |> cast(attrs, [:entry_time, :exit_time, :spot_id, :pricing_id, :permanent_user_id])
     |> validate_required([:entry_time, :spot_id])
     |> validate_required_if_guest()
     |> assoc_constraint(:spot)

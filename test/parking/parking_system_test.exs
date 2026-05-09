@@ -1,6 +1,8 @@
 defmodule Parking.ParkingSystemTest do
   use Parking.DataCase
 
+  import Ecto.Query
+
   alias Parking.ParkingSystem
   alias Parking.Repo
   alias Parking.ParkingGarage
@@ -9,6 +11,7 @@ defmodule Parking.ParkingSystemTest do
   alias Parking.Pricing.DailyRateConfig
   alias Parking.Pricing.MonthlyRentConfig
   alias Parking.Ticket
+  alias Parking.Payment
   alias Parking.ParkingSpot
   alias Parking.Level
   alias Parking.Users.PermanentUser
@@ -34,15 +37,22 @@ defmodule Parking.ParkingSystemTest do
     pricing
   end
 
+  defp active_ticket_exists?(spot_id) do
+    Repo.exists?(from t in Ticket, where: t.spot_id == ^spot_id and is_nil(t.exit_time))
+  end
+
+  defp payment_exists?(ticket_id) do
+    Repo.exists?(from p in Payment, where: p.ticket_id == ^ticket_id)
+  end
+
   describe "guest parking workflow" do
     setup do
-      # Create test garage with levels and spots
       {:ok, garage} = Repo.insert(%ParkingGarage{name: "Test Garage"})
 
       level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
 
-      spot1 = Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
-      spot2 = Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
+      spot1 = Repo.insert!(%ParkingSpot{number: 1, level_id: level.id})
+      spot2 = Repo.insert!(%ParkingSpot{number: 2, level_id: level.id})
 
       pricing = insert_time_based_pricing(garage.id)
 
@@ -54,12 +64,10 @@ defmodule Parking.ParkingSystemTest do
 
       assert ticket.spot_id
       assert ticket.entry_time
-      refute ticket.paid
+      refute payment_exists?(ticket.id)
       assert ticket.pricing_id == pricing.id
 
-      # Verify spot is now occupied
-      spot = Repo.get!(ParkingSpot, ticket.spot_id)
-      assert spot.is_occupied
+      assert active_ticket_exists?(ticket.spot_id)
     end
 
     test "guest cannot enter when no spots available", %{
@@ -67,43 +75,40 @@ defmodule Parking.ParkingSystemTest do
       pricing: pricing,
       spots: spots
     } do
-      # Occupy all spots
+      # Occupy all spots with active tickets
       Enum.each(spots, fn spot ->
-        Repo.update!(ParkingSpot.changeset(spot, %{is_occupied: true}))
+        Repo.insert!(%Ticket{
+          entry_time: DateTime.utc_now() |> DateTime.truncate(:second),
+          spot_id: spot.id,
+          pricing_id: pricing.id
+        })
       end)
 
       assert {:error, :no_available_spots} = ParkingSystem.create_ticket(garage.id, pricing.id)
     end
 
     test "guest pays and exits successfully", %{garage: garage, pricing: pricing} do
-      # Enter
       {:ok, ticket} = ParkingSystem.create_ticket(garage.id, pricing.id)
 
-      # Pay
       {:ok, paid_ticket} = ParkingSystem.process_payment(ticket)
 
-      # Exit
       {:ok, exited_ticket} = ParkingSystem.register_exit(paid_ticket)
 
       assert exited_ticket.exit_time
-      assert exited_ticket.paid
-
-      # Verify spot is now free
-      spot = Repo.get!(ParkingSpot, exited_ticket.spot_id)
-      refute spot.is_occupied
+      assert payment_exists?(exited_ticket.id)
+      refute active_ticket_exists?(exited_ticket.spot_id)
     end
 
     test "pay then exit workflow", %{garage: garage, pricing: pricing} do
       {:ok, ticket} = ParkingSystem.create_ticket(garage.id, pricing.id)
 
       {:ok, paid_ticket} = ParkingSystem.process_payment(ticket)
-      assert paid_ticket.paid
+      assert payment_exists?(paid_ticket.id)
 
       {:ok, exited_ticket} = ParkingSystem.register_exit(paid_ticket)
       assert exited_ticket.exit_time
 
-      spot = Repo.get!(ParkingSpot, exited_ticket.spot_id)
-      refute spot.is_occupied
+      refute active_ticket_exists?(exited_ticket.spot_id)
     end
 
     # TC-12: Ausfahrt ohne Zahlung wird verweigert
@@ -111,9 +116,7 @@ defmodule Parking.ParkingSystemTest do
       {:ok, ticket} = ParkingSystem.create_ticket(garage.id, pricing.id)
       assert {:error, :payment_required} = ParkingSystem.register_exit(ticket)
 
-      # Spot must still be occupied
-      spot = Repo.get!(ParkingSpot, ticket.spot_id)
-      assert spot.is_occupied
+      assert active_ticket_exists?(ticket.spot_id)
     end
   end
 
@@ -122,7 +125,7 @@ defmodule Parking.ParkingSystemTest do
     setup do
       {:ok, garage} = Repo.insert(%ParkingGarage{name: "Test Garage"})
       level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
-      Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
+      Repo.insert!(%ParkingSpot{number: 1, level_id: level.id})
 
       pricing = insert_time_based_pricing(garage.id)
 
@@ -139,26 +142,19 @@ defmodule Parking.ParkingSystemTest do
       {:ok, ticket} = ParkingSystem.create_ticket(garage.id, pricing.id)
       assert {:error, :payment_failed} = ParkingSystem.process_payment(ticket)
 
-      # Transaction rolled back — ticket must still be unpaid
-      reloaded = Repo.get!(Ticket, ticket.id)
-      refute reloaded.paid
-
-      # Spot must still be occupied
-      spot = Repo.get!(ParkingSpot, ticket.spot_id)
-      assert spot.is_occupied
+      refute payment_exists?(ticket.id)
+      assert active_ticket_exists?(ticket.spot_id)
     end
   end
 
   describe "permanent user workflow" do
     setup do
-      # Create test garage with levels and spots
       {:ok, garage} = Repo.insert(%ParkingGarage{name: "Test Garage"})
 
       level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
 
-      spot = Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
+      spot = Repo.insert!(%ParkingSpot{number: 1, level_id: level.id})
 
-      # Create permanent user
       {:ok, user} = Repo.insert(%Parking.Users.User{type: "permanent"})
 
       {:ok, perm_user} =
@@ -185,35 +181,26 @@ defmodule Parking.ParkingSystemTest do
     test "permanent user enters successfully", %{perm_user: perm_user} do
       {:ok, _updated_user} = ParkingSystem.enter_permanent_user(perm_user)
 
-      # Check that a ticket was created
       ticket = Repo.get_by(Ticket, permanent_user_id: perm_user.id) |> Repo.preload(:spot)
       assert ticket
       assert ticket.spot_id == perm_user.spot_id
       refute ticket.exit_time
 
-      # Check that spot is occupied
-      spot = Repo.get!(ParkingSpot, perm_user.spot_id)
-      assert spot.is_occupied
+      assert active_ticket_exists?(perm_user.spot_id)
     end
 
     test "permanent user exits successfully", %{perm_user: perm_user} do
-      # Enter first
       {:ok, _} = ParkingSystem.enter_permanent_user(perm_user)
 
-      # Exit
       {:ok, _updated_user} = ParkingSystem.exit_permanent_user(perm_user)
 
-      # Check that ticket has exit time
       ticket = Repo.get_by(Ticket, permanent_user_id: perm_user.id)
       assert ticket.exit_time
 
-      # Check that spot is free
-      spot = Repo.get!(ParkingSpot, perm_user.spot_id)
-      refute spot.is_occupied
+      refute active_ticket_exists?(perm_user.spot_id)
     end
 
     test "blocked permanent user cannot enter", %{perm_user: perm_user} do
-      # Block the user
       Repo.update!(PermanentUser.changeset(perm_user, %{is_blocked: true}))
 
       assert {:error, {:blocked, _}} = ParkingSystem.authenticate_permanent_user("123456")
@@ -224,9 +211,8 @@ defmodule Parking.ParkingSystemTest do
     test "returns error when no free spots are available" do
       {:ok, garage} = Repo.insert(%ParkingGarage{name: "Full Garage"})
       level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
-      spot = Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
+      spot = Repo.insert!(%ParkingSpot{number: 1, level_id: level.id})
 
-      # Reserve the only spot for an existing permanent user
       {:ok, user} = Repo.insert(%Parking.Users.User{type: "permanent"})
 
       Repo.insert!(%PermanentUser{
@@ -243,7 +229,7 @@ defmodule Parking.ParkingSystemTest do
     test "creates permanent user with monthly rent from pricing sub-table" do
       {:ok, garage} = Repo.insert(%ParkingGarage{name: "Test Garage"})
       level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
-      Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
+      Repo.insert!(%ParkingSpot{number: 1, level_id: level.id})
       insert_monthly_rent_pricing(garage.id, 100.0)
 
       assert {:ok, perm_user} = ParkingSystem.create_permanent_user(garage.id, "New User")
@@ -259,12 +245,12 @@ defmodule Parking.ParkingSystemTest do
       level1 = Repo.insert!(%Level{number: 1, garage_id: garage.id})
       level2 = Repo.insert!(%Level{number: 2, garage_id: garage.id})
 
-      Enum.each(1..3, fn _ ->
-        Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level1.id})
+      Enum.each(1..3, fn n ->
+        Repo.insert!(%ParkingSpot{number: n, level_id: level1.id})
       end)
 
-      Enum.each(1..3, fn _ ->
-        Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level2.id})
+      Enum.each(1..3, fn n ->
+        Repo.insert!(%ParkingSpot{number: n, level_id: level2.id})
       end)
 
       pricing = insert_time_based_pricing(garage.id)
@@ -319,13 +305,13 @@ defmodule Parking.ParkingSystemTest do
 
       # Level 1: 3 spots, 2 reserved for permanent users (1 guest spot free)
       [l1s1, l1s2, _l1s3] =
-        Enum.map(1..3, fn _ ->
-          Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level1.id})
+        Enum.map(1..3, fn n ->
+          Repo.insert!(%ParkingSpot{number: n, level_id: level1.id})
         end)
 
       # Level 2: 3 spots, none reserved (3 guest spots free)
-      Enum.each(1..3, fn _ ->
-        Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level2.id})
+      Enum.each(1..3, fn n ->
+        Repo.insert!(%ParkingSpot{number: n, level_id: level2.id})
       end)
 
       Enum.each([l1s1, l1s2], fn spot ->
@@ -360,19 +346,23 @@ defmodule Parking.ParkingSystemTest do
 
   describe "garage statistics" do
     setup do
-      # Create test garage with levels and spots
       {:ok, garage} = Repo.insert(%ParkingGarage{name: "Test Garage"})
 
       level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
+      pricing = insert_time_based_pricing(garage.id)
 
       spots =
-        Enum.map(1..5, fn _ ->
-          Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
+        Enum.map(1..5, fn n ->
+          Repo.insert!(%ParkingSpot{number: n, level_id: level.id})
         end)
 
-      # Occupy 2 spots
+      # Occupy 2 spots via active tickets
       Enum.each(Enum.take(spots, 2), fn spot ->
-        Repo.update!(ParkingSpot.changeset(spot, %{is_occupied: true}))
+        Repo.insert!(%Ticket{
+          entry_time: DateTime.utc_now() |> DateTime.truncate(:second),
+          spot_id: spot.id,
+          pricing_id: pricing.id
+        })
       end)
 
       %{garage: garage, spots: spots}

@@ -126,7 +126,7 @@
               <tr>
                 <th class="px-3 py-2">Name</th>
                 <th class="px-3 py-2">Karten UUID</th>
-                <th class="px-3 py-2">Stellplatz</th>
+                <th class="px-3 py-2">Parkplatz</th>
                 <th class="px-3 py-2">Status</th>
                 <th class="px-3 py-2">Gesperrt</th>
                 <th class="px-3 py-2">Miete bis</th>
@@ -139,7 +139,7 @@
                   <td class="px-3 py-3 font-medium">{user.name}</td>
                   <td class="px-3 py-3 font-mono break-all">{user.access_code}</td>
                   <td class="px-3 py-3">
-                    <%= if user.spot && user.spot.is_occupied do %>
+                    <%= if user.is_parked do %>
                       <span class="font-mono">#{user.spot.number}</span>
                     <% else %>
                       <%= if user.spot do %>
@@ -173,12 +173,12 @@
                   <td class="px-3 py-3">
                     <span class={[
                       "inline-flex rounded-full px-2 py-1 text-xs font-semibold",
-                      if(user.spot && user.spot.is_occupied,
+                      if(user.is_parked,
                         do: "bg-green-500/20 text-green-200",
                         else: "bg-yellow-500/20 text-yellow-200"
                       )
                     ]}>
-                      {if user.spot && user.spot.is_occupied, do: "Eingeparkt", else: "Bereit"}
+                      {if user.is_parked, do: "Eingeparkt", else: "Bereit"}
                     </span>
                   </td>
                   <td class="px-3 py-3">

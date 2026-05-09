@@ -22,7 +22,7 @@ defmodule Parking.Services.StatisticsServiceTest do
 
       # Create level and spots
       level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
-      spot = Repo.insert!(%ParkingSpot{is_occupied: false, level_id: level.id})
+      spot = Repo.insert!(%ParkingSpot{number: 1, level_id: level.id})
 
       %{garage: garage, pricing: pricing, spot: spot}
     end
@@ -37,7 +37,6 @@ defmodule Parking.Services.StatisticsServiceTest do
         Repo.insert(%Ticket{
           entry_time: entry_time,
           exit_time: DateTime.add(entry_time, 2, :hour),
-          paid: true,
           spot_id: spot.id,
           pricing_id: pricing.id
         })
@@ -45,7 +44,6 @@ defmodule Parking.Services.StatisticsServiceTest do
       # Create payment
       Repo.insert!(%Payment{
         amount: Decimal.new("8.0"),
-        timestamp: entry_time,
         ticket_id: ticket.id
       })
 
@@ -72,7 +70,6 @@ defmodule Parking.Services.StatisticsServiceTest do
         Repo.insert(%Ticket{
           entry_time: entry_time,
           exit_time: DateTime.add(entry_time, 1, :hour),
-          paid: true,
           spot_id: spot.id,
           pricing_id: pricing.id
         })
@@ -80,7 +77,6 @@ defmodule Parking.Services.StatisticsServiceTest do
       # Create payment
       Repo.insert!(%Payment{
         amount: Decimal.new("5.0"),
-        timestamp: entry_time,
         ticket_id: ticket.id
       })
 
@@ -103,7 +99,6 @@ defmodule Parking.Services.StatisticsServiceTest do
         Repo.insert(%Ticket{
           entry_time: entry_time,
           exit_time: DateTime.add(entry_time, 3, :hour),
-          paid: true,
           spot_id: spot.id,
           pricing_id: pricing.id
         })
@@ -111,7 +106,6 @@ defmodule Parking.Services.StatisticsServiceTest do
       # Create payment
       Repo.insert!(%Payment{
         amount: Decimal.new("11.0"),
-        timestamp: entry_time,
         ticket_id: ticket.id
       })
 
@@ -132,14 +126,12 @@ defmodule Parking.Services.StatisticsServiceTest do
         Repo.insert(%Ticket{
           entry_time: entry_time,
           exit_time: DateTime.add(entry_time, 1, :hour),
-          paid: true,
           spot_id: spot.id,
           pricing_id: pricing.id
         })
 
       Repo.insert!(%Payment{
         amount: Decimal.new("5.0"),
-        timestamp: entry_time,
         ticket_id: guest_ticket.id
       })
 
@@ -158,7 +150,6 @@ defmodule Parking.Services.StatisticsServiceTest do
         Repo.insert(%Ticket{
           entry_time: entry_time,
           exit_time: DateTime.add(entry_time, 2, :hour),
-          paid: true,
           spot_id: spot.id,
           pricing_id: nil,
           permanent_user_id: perm_user.id
@@ -166,7 +157,6 @@ defmodule Parking.Services.StatisticsServiceTest do
 
       Repo.insert!(%Payment{
         amount: Decimal.new("10.0"),
-        timestamp: entry_time,
         ticket_id: permanent_ticket.id
       })
 

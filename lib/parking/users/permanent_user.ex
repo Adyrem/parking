@@ -9,6 +9,7 @@ defmodule Parking.Users.PermanentUser do
     field :is_blocked, :boolean, default: false
     field :rent_paid_until, :date
     field :last_rent_payment_at, :utc_datetime
+    field :is_parked, :boolean, virtual: true, default: false
     belongs_to :user, Parking.Users.User, define_field: false, foreign_key: :id
     belongs_to :spot, Parking.ParkingSpot, type: :id
     timestamps()
@@ -26,6 +27,8 @@ defmodule Parking.Users.PermanentUser do
       :last_rent_payment_at
     ])
     |> validate_required([:access_code, :id])
+    |> unique_constraint(:access_code)
+    |> unique_constraint(:spot_id)
   end
 
   def validate_code(%__MODULE__{access_code: code, is_blocked: blocked}, input) do

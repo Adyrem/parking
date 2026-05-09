@@ -121,12 +121,12 @@
 
               <button
                 phx-click="pay"
-                disabled={@ticket == nil or @ticket.paid}
+                disabled={@ticket == nil or @ticket_paid}
                 class={[
                   "w-full font-bold py-3 px-4 rounded-lg transition duration-200",
-                  (@ticket == nil or @ticket.paid) &&
+                  (@ticket == nil or @ticket_paid) &&
                     "bg-gray-700 text-gray-500 cursor-not-allowed",
-                  (@ticket != nil and not @ticket.paid) &&
+                  (@ticket != nil and not @ticket_paid) &&
                     "bg-blue-600 hover:bg-blue-700 text-white"
                 ]}
               >
@@ -135,12 +135,12 @@
 
               <button
                 phx-click="exit"
-                disabled={@ticket == nil or not @ticket.paid or @ticket.exit_time != nil}
+                disabled={@ticket == nil or not @ticket_paid or @ticket.exit_time != nil}
                 class={[
                   "w-full font-bold py-3 px-4 rounded-lg transition duration-200",
-                  (@ticket == nil or not @ticket.paid or @ticket.exit_time != nil) &&
+                  (@ticket == nil or not @ticket_paid or @ticket.exit_time != nil) &&
                     "bg-gray-700 text-gray-500 cursor-not-allowed",
-                  (@ticket != nil and @ticket.paid and @ticket.exit_time == nil) &&
+                  (@ticket != nil and @ticket_paid and @ticket.exit_time == nil) &&
                     "bg-orange-600 hover:bg-orange-700 text-white"
                 ]}
               >
@@ -185,17 +185,10 @@
                 phx-click="permanent_enter"
                 class={[
                   "w-full font-bold py-3 px-4 rounded-lg transition duration-200",
-                  @authenticated_permanent_user.spot &&
-                    @authenticated_permanent_user.spot.is_occupied &&
-                    "bg-gray-700 text-gray-500 cursor-not-allowed",
-                  not (@authenticated_permanent_user.spot &&
-                         @authenticated_permanent_user.spot.is_occupied) &&
-                    "bg-teal-600 hover:bg-teal-700 text-white"
+                  @perm_user_parked && "bg-gray-700 text-gray-500 cursor-not-allowed",
+                  not @perm_user_parked && "bg-teal-600 hover:bg-teal-700 text-white"
                 ]}
-                disabled={
-                  @authenticated_permanent_user.spot &&
-                    @authenticated_permanent_user.spot.is_occupied
-                }
+                disabled={@perm_user_parked}
               >
                 Einfahrt (Dauerparker)
               </button>
@@ -204,17 +197,10 @@
                 phx-click="permanent_exit"
                 class={[
                   "w-full font-bold py-3 px-4 rounded-lg transition duration-200",
-                  not (@authenticated_permanent_user.spot &&
-                         @authenticated_permanent_user.spot.is_occupied) &&
-                    "bg-gray-700 text-gray-500 cursor-not-allowed",
-                  @authenticated_permanent_user.spot &&
-                    @authenticated_permanent_user.spot.is_occupied &&
-                    "bg-orange-600 hover:bg-orange-700 text-white"
+                  not @perm_user_parked && "bg-gray-700 text-gray-500 cursor-not-allowed",
+                  @perm_user_parked && "bg-orange-600 hover:bg-orange-700 text-white"
                 ]}
-                disabled={
-                  not (@authenticated_permanent_user.spot &&
-                         @authenticated_permanent_user.spot.is_occupied)
-                }
+                disabled={not @perm_user_parked}
               >
                 Ausfahrt (Dauerparker)
               </button>
@@ -304,17 +290,9 @@
                 <p class="text-gray-400 text-xs uppercase tracking-wider">Status</p>
                 <p class={[
                   "mt-1 font-semibold",
-                  if(
-                    @authenticated_permanent_user.spot &&
-                      @authenticated_permanent_user.spot.is_occupied,
-                    do: "text-green-400",
-                    else: "text-yellow-400"
-                  )
+                  if(@perm_user_parked, do: "text-green-400", else: "text-yellow-400")
                 ]}>
-                  {if @authenticated_permanent_user.spot &&
-                        @authenticated_permanent_user.spot.is_occupied,
-                      do: "Eingeparkt",
-                      else: "Bereit zum Einfahren"}
+                  {if @perm_user_parked, do: "Eingeparkt", else: "Bereit zum Einfahren"}
                 </p>
               </div>
               <div class="sm:col-span-2">
@@ -384,7 +362,7 @@
                 <%!-- Payment Status --%>
                 <div class={[
                   "border-l-4 pl-4",
-                  if(@ticket.paid, do: "border-green-500", else: "border-red-500")
+                  if(@ticket_paid, do: "border-green-500", else: "border-red-500")
                 ]}>
                   <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">
                     Bezahlungsstatus
@@ -392,16 +370,16 @@
                   <div class="flex items-center mt-1 space-x-2">
                     <span class={[
                       "w-2 h-2 rounded-full",
-                      if(@ticket.paid, do: "bg-green-500", else: "bg-red-500")
+                      if(@ticket_paid, do: "bg-green-500", else: "bg-red-500")
                     ]}>
                     </span>
                     <p class="text-gray-100 text-sm font-semibold">
-                      {if @ticket.paid, do: "Bezahlt", else: "Ausstehend"}
+                      {if @ticket_paid, do: "Bezahlt", else: "Ausstehend"}
                     </p>
                   </div>
                 </div>
 
-                <%= if @current_fee != nil and not @ticket.paid do %>
+                <%= if @current_fee != nil and not @ticket_paid do %>
                   <div class="border-l-4 border-yellow-400 pl-4">
                     <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">
                       Aktueller Betrag

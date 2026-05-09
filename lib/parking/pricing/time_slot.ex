@@ -16,5 +16,6 @@ defmodule Parking.Pricing.TimeSlot do
     |> cast(attrs, [:pricing_id, :from_time, :to_time, :rate_per_hour, :slot_type])
     |> validate_required([:pricing_id, :from_time, :to_time, :rate_per_hour, :slot_type])
     |> validate_inclusion(:slot_type, ["weekday", "weekend", "holiday"])
+    |> unique_constraint([:pricing_id, :slot_type, :from_time, :to_time])
   end
 end

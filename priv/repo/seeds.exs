@@ -55,8 +55,7 @@ Enum.each(1..3, fn level_number ->
   Enum.each(1..10, fn spot_number ->
     Repo.insert!(%ParkingSpot{
       number: level_number * 100 + spot_number,
-      is_occupied: false,
-      level_id: level.id
+            level_id: level.id
     })
   end)
 end)
@@ -68,8 +67,7 @@ Enum.each(1..2, fn level_number ->
   Enum.each(1..8, fn spot_number ->
     Repo.insert!(%ParkingSpot{
       number: level_number * 100 + spot_number,
-      is_occupied: false,
-      level_id: level.id
+            level_id: level.id
     })
   end)
 end)

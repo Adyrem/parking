@@ -8,15 +8,14 @@ defmodule Parking.Payment do
 
   schema "payment" do
     field :amount, :decimal
-    field :timestamp, :utc_datetime
     belongs_to :ticket, Parking.Ticket
     timestamps()
   end
 
   def changeset(payment, attrs) do
     payment
-    |> cast(attrs, [:amount, :timestamp, :ticket_id])
-    |> validate_required([:amount, :timestamp, :ticket_id])
+    |> cast(attrs, [:amount, :ticket_id])
+    |> validate_required([:amount, :ticket_id])
     |> validate_number(:amount, greater_than: 0)
     |> assoc_constraint(:ticket)
   end

@@ -42,9 +42,9 @@ Adrian Aeschlimann · TEKO Schweizerische Fachschule · Mai 2026
 
 ## Technologie-Stack
 
-- **Elixir / Phoenix / LiveView** — serverseitige UI, kein JS-Framework
-- **PostgreSQL** + Ecto — relationale Datenhaltung
-- **BEAM** — Nebenläufigkeit und Stabilität
+- **Elixir / Phoenix / LiveView** - serverseitige UI, kein JS-Framework
+- **PostgreSQL** + Ecto - relationale Datenhaltung
+- **BEAM** - Nebenläufigkeit und Stabilität
 
 Motivation: neue Technologie im Rahmen der Arbeit kennenlernen
 
@@ -58,12 +58,12 @@ Motivation: neue Technologie im Rahmen der Arbeit kennenlernen
 
 ---
 
-## Preisberechnung — Strategy Pattern
+## Preisberechnung - Strategy Pattern
 
 ```
 PricingStrategy (Behaviour)
-├── TimeBasedPricing   ← Viertelstundentarif, Zeit-/Wochenend-/Feiertagsslots
-└── FlatRatePricing    ← Einfache Tagespauschale
+├── TimeBasedPricing <- Viertelstundentarif, Zeit-/Wochenend-/Feiertagsslots
+└── FlatRatePricing  <- Einfache Tagespauschale
 ```
 
 - Viertelstundenabrechnung (Tarif zu Beginn gilt für ganze Viertelstunde)
@@ -79,7 +79,7 @@ PricingStrategy (Behaviour)
 
 | Ansicht | Funktion |
 |---|---|
-| Parkhaus-Ansicht | Einfahrt, Bezahlung, Ausfahrt — für beide Nutzertypen |
+| Parkhaus-Ansicht | Einfahrt, Bezahlung, Ausfahrt - für beide Nutzertypen |
 | Admin | Dauermieter verwalten, Miete buchen, Sperrstatus |
 | Statistik | Monats-/Jahresumsatz nach Kundenkategorie |
 
@@ -89,11 +89,11 @@ PricingStrategy (Behaviour)
 
 <!-- _class: img-slide -->
 
-## Datenbank
+<!--## Datenbank
 
 <img src="diagrams/ERD_Realisierung.png" width="40%">
 
----
+----->
 
 <!-- _class: small-table -->
 

@@ -12,5 +12,6 @@ defmodule Parking.Pricing.Holiday do
     holiday
     |> cast(attrs, [:pricing_id, :date])
     |> validate_required([:pricing_id, :date])
+    |> unique_constraint([:pricing_id, :date])
   end
 end

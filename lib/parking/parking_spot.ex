@@ -5,7 +5,6 @@ defmodule Parking.ParkingSpot do
 
   schema "parking_spot" do
     field :number, :integer, default: 0
-    field :is_occupied, :boolean, default: false
     belongs_to :level, Parking.Level, foreign_key: :level_id
     has_many :tickets, Parking.Ticket, foreign_key: :spot_id
     has_one :permanent_user, Parking.Users.PermanentUser, foreign_key: :spot_id
@@ -14,9 +13,10 @@ defmodule Parking.ParkingSpot do
 
   def changeset(spot, attrs) do
     spot
-    |> cast(attrs, [:number, :is_occupied, :level_id])
+    |> cast(attrs, [:number, :level_id])
     |> validate_required([:number, :level_id])
     |> assoc_constraint(:level)
+    |> unique_constraint([:number, :level_id])
   end
 
 end

@@ -265,12 +265,7 @@
 
                 <div class="grid grid-cols-12 gap-3 mb-4">
                   <%= for spot <- level_stat.level.spots do %>
-                    <% active_ticket =
-                      if spot.is_occupied and spot.tickets do
-                        Enum.find(spot.tickets, &is_nil(&1.exit_time))
-                      else
-                        nil
-                      end
+                    <% active_ticket = Enum.find(spot.tickets || [], &is_nil(&1.exit_time))
 
                     spot_type =
                       Map.get(
@@ -278,7 +273,7 @@
                         :spot_type,
                         cond do
                           spot.permanent_user != nil -> :permanent
-                          spot.is_occupied -> :guest_occupied
+                          active_ticket != nil -> :guest_occupied
                           true -> :guest_available
                         end
                       ) %>
@@ -289,7 +284,7 @@
                         class={[
                           "w-full h-24 rounded-3xl border-2 transition-all duration-200 p-3 text-left flex flex-col justify-between",
                           cond do
-                            spot_type == :permanent and spot.is_occupied ->
+                            spot_type == :permanent and active_ticket != nil ->
                               "bg-violet-700 border-violet-500 text-white shadow-violet-500/15 hover:border-violet-400"
 
                             spot_type == :permanent ->
@@ -304,7 +299,7 @@
                         ]}
                         title={
                           cond do
-                            spot_type == :permanent and spot.is_occupied ->
+                            spot_type == :permanent and active_ticket != nil ->
                               "Platz ##{spot.number} - Dauerparkplatz belegt"
 
                             spot_type == :permanent ->
@@ -321,13 +316,13 @@
                         <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.12em]">
                           <span>Platz #{spot.number}</span>
                           <span>
-                            <%= if spot_type == :permanent and spot.is_occupied do %>
+                            <%= if spot_type == :permanent and active_ticket != nil do %>
                               P
                             <% else %>
                               <%= if spot_type == :permanent do %>
                                 R
                               <% else %>
-                                <%= if spot.is_occupied do %>
+                                <%= if active_ticket != nil do %>
                                   <span class="material-icons text-xs leading-none">block</span>
                                 <% else %>
                                   P
@@ -337,7 +332,7 @@
                           </span>
                         </div>
                         <div class="mt-2 text-[0.7rem] leading-4 text-gray-200">
-                          <%= if spot_type == :permanent and spot.is_occupied do %>
+                          <%= if spot_type == :permanent and active_ticket != nil do %>
                             <div>Dauerparker</div>
                             <div class="text-[0.65rem] text-slate-200 truncate">
                               Ticket: {String.slice(active_ticket.id, 0..7)}...
@@ -385,20 +380,20 @@
                               <span>Status</span>
                               <span class={
                                 cond do
-                                  spot_type == :permanent and spot.is_occupied -> "text-violet-300"
+                                  spot_type == :permanent and active_ticket != nil -> "text-violet-300"
                                   spot_type == :permanent -> "text-sky-300"
-                                  spot.is_occupied -> "text-red-300"
+                                  active_ticket != nil -> "text-red-300"
                                   true -> "text-emerald-300"
                                 end
                               }>
                                 {cond do
-                                  spot_type == :permanent and spot.is_occupied ->
+                                  spot_type == :permanent and active_ticket != nil ->
                                     "Dauerparker eingeparkt"
 
                                   spot_type == :permanent ->
                                     "Reserviert"
 
-                                  spot.is_occupied ->
+                                  active_ticket != nil ->
                                     "Belegt"
 
                                   true ->
@@ -412,13 +407,13 @@
                               </p>
                               <p class="text-gray-200">
                                 {cond do
-                                  spot_type == :permanent and spot.is_occupied ->
+                                  spot_type == :permanent and active_ticket != nil ->
                                     "Dauerparkplatz – Fahrzeug eingeparkt"
 
                                   spot_type == :permanent ->
                                     "Dauerparkplatz – Fahrzeug nicht eingeparkt"
 
-                                  spot.is_occupied ->
+                                  active_ticket != nil ->
                                     "Gästeplatz – Fahrzeug eingeparkt"
 
                                   true ->

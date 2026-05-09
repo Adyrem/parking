@@ -15,5 +15,6 @@ defmodule Parking.Level do
     |> cast(attrs, [:number, :garage_id])
     |> validate_required([:number, :garage_id])
     |> assoc_constraint(:garage)
+    |> unique_constraint([:number, :garage_id])
   end
 end
