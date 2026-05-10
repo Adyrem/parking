@@ -95,11 +95,11 @@ Stellt ein Stockwerk innerhalb eines Parkhauses mit Stockwerknummer und Parkplat
 
 *Parking.ParkingSpot*
 
-Entspricht einem einzelnen Parkplatz mit einer lesbaren Platznummer (`number`). Die Platznummer wird nach dem Schema Stockwerknummer × 100 + laufende Nummer vergeben, sodass Platz 3 auf Stockwerk 2 die Nummer 203 trägt. Der Belegungsstatus wird nicht als eigenes Feld gespeichert, sondern zur Laufzeit aus aktiven Tickets abgeleitet: Ein Parkplatz gilt als belegt, wenn ein Ticket mit dieser Platz-ID existiert, dessen `exit_time` noch nicht gesetzt ist. Die Zuweisung eines Parkplatzes erfolgt beim Erstellen des Tickets.
+Entspricht einem einzelnen Parkplatz mit einer lesbaren Platznummer (`number`). Die Platznummer wird nach dem Schema Stockwerknummer × 100 + laufende Nummer vergeben, sodass Platz 3 auf Stockwerk 2 die Nummer 203 trägt. Der Belegungsstatus wird nicht als eigenes Feld gespeichert, sondern zur Laufzeit aus aktiven Tickets abgeleitet: Ein Parkplatz gilt als belegt, wenn ein Ticket mit dieser Platz-ID existiert, dessen `exit_time` noch nicht gesetzt ist. Die Zuweisung eines Parkplatzes erfolgt beim Erstellen des Tickets. Im Konzept war ein dreistufiger Lebenszyklus (frei, reserviert, belegt) vorgesehen; eine explizite Reservierungsphase wird im Prototyp nicht benötigt und wurde nicht umgesetzt.
 
 *Parking.Ticket*
 
-Ist das Parkticket mit Einfahrtszeit, Ausfahrtszeit sowie Verknüpfungen zu Parkplatz, Tarif und optional einem Dauermieter. Der Bezahlstatus ergibt sich aus der Existenz eines verknüpften `Payment`-Datensatzes.
+Ist das Parkticket mit Einfahrtszeit, Ausfahrtszeit sowie Verknüpfungen zu Parkplatz, Tarif und optional einem Dauermieter. Im Konzept war ein explizites `paid`-Feld vorgesehen; in der Umsetzung entfällt dieses, da der Bezahlstatus aus der Existenz eines verknüpften `Payment`-Datensatzes abgeleitet wird.
 
 *Parking.Payment*
 
@@ -149,7 +149,7 @@ Die Benutzeroberfläche ist als Phoenix LiveView-Anwendung umgesetzt. Der Zustan
 
 Die Parkhaus-Ansicht bildet die primäre Schnittstelle für den Parkierungsprozess. Beim Laden der Seite wird das erste verfügbare Parkhaus ausgewählt. Über ein Auswahlmenü kann zwischen mehreren Parkhäusern gewechselt werden.
 
-Für Gelegenheitsnutzer simuliert ein Klick auf die Einfahrtsschaltfläche das Drücken des Knopfs an der Eingangsschranke. Das System erstellt ein Ticket, weist einen freien Parkplatz zu und zeigt die Ticketdetails (UUID, Einfahrtszeit, zugewiesener Parkplatz) sowie die bis dahin aufgelaufene Gebühr direkt an. Die angezeigte Gebühr wird serverseitig bei jeder Interaktion neu berechnet. Nach der Bezahlung gibt die Ausfahrt-Schaltfläche den Parkplatz frei und markiert die Ausfahrtszeit. Über eine Scan-Funktion kann ein bestehendes Ticket anhand der UUID geladen werden, um dessen Status einzusehen oder die Bezahlung und Ausfahrt nachträglich vorzunehmen.
+Für Gelegenheitsnutzer simuliert ein Klick auf die Einfahrtsschaltfläche das Drücken des Knopfs an der Eingangsschranke. Das System erstellt ein Ticket, weist einen freien Parkplatz zu und zeigt die Ticketdetails (UUID, Einfahrtszeit, zugewiesener Parkplatz) sowie die bis dahin aufgelaufene Gebühr direkt an. Die angezeigte Gebühr wird serverseitig bei jeder Interaktion neu berechnet. Nach der Bezahlung gibt die Ausfahrt-Schaltfläche den Parkplatz frei und markiert die Ausfahrtszeit. Über eine Scan-Funktion kann ein bestehendes Ticket anhand der UUID geladen werden, um dessen Status einzusehen oder die Bezahlung und Ausfahrt nachträglich vorzunehmen. Das im Konzept vorgesehene eigenständige Austrittsticket (F-21) wird nicht als separates digitales Dokument generiert. Bezahlstatus und Ausfahrtszeit werden direkt auf dem bestehenden Ticket in der Weboberfläche angezeigt. Ein physisches Ticket, das beispielsweise ausgedruckt werden könnte, ist im Prototyp nicht vorgesehen, könnte aber unabhängig gedruckt werden, auch wenn kein neues digitales Dokument erstellt wird.
 
 Für Dauermieter authentifiziert sich der Nutzer mit seinem Zugangscode. Das System prüft den Code sowie den Zahlungsstatus. Die Sperrlogik unterscheidet zwei Fälle: Ist die Miete zwei oder mehr Monate im Rückstand, erfolgt die Sperrung sofort. Ist die Miete genau einen Monat im Rückstand, gilt eine Frist bis zum 15. des laufenden Monats. Nach erfolgreicher Anmeldung werden Einfahrt und Ausfahrt separat ausgelöst, wobei ein aktives Ticket erstellt beziehungsweise abgeschlossen und der Parkplatz entsprechend belegt oder freigegeben wird.
 
@@ -168,7 +168,7 @@ Für Dauermieter authentifiziert sich der Nutzer mit seinem Zugangscode. Das Sys
 
 === Administrationsoberfläche (AdminLive)
 
-Die Administrationsoberfläche ist durch ein Passwort geschützt. Erst nach erfolgreicher Anmeldung werden die Verwaltungsfunktionen freigeschaltet und die Dauermieterliste des ausgewählten Parkhauses angezeigt. Die Tabelle enthält Name, Zugangscode, zugewiesenen Parkplatz, Sperrstatus sowie das Datum, bis zu dem die Miete bezahlt ist.
+Die Administrationsoberfläche ist durch ein Passwort geschützt. Erst nach erfolgreicher Anmeldung werden die Verwaltungsfunktionen freigeschaltet und die Dauermieterliste des ausgewählten Parkhauses angezeigt. Eine Oberfläche zur Konfiguration von Parkhäusern, Stockwerken und Parkplätzen (F-01, F-02) ist nicht implementiert. Diese Konfiguration erfolgt im Prototyp über Datenbankmigrationen und Seed-Daten. Die Tabelle enthält Name, Zugangscode, zugewiesenen Parkplatz, Sperrstatus sowie das Datum, bis zu dem die Miete bezahlt ist.
 
 Ein neuer Dauermieter wird mit automatisch generiertem UUID-Zugangscode angelegt. Das System weist ihm automatisch den nächsten freien Parkplatz zu und zeigt den generierten Code nach der Erstellung an. Bei der Erstellung wird die erste Monatsmiete sofort als Ticket- und Zahlungsdatensatz erfasst, sodass der Dauermieter ab dem ersten Tag Zugang erhält. Die Miete eines Dauermieters kann als bezahlt markiert werden, wodurch das `rent_paid_until`-Datum um einen Monat verlängert, ein Ticket sowie ein Zahlungsdatensatz für die Miete erstellt und ein allfälliger Sperrstatus aufgehoben wird. Zusätzlich kann der Sperrstatus einzelner Dauermieter manuell umgeschaltet werden. Einem Dauermieter kann nachträglich ein anderer freier Parkplatz zugewiesen werden, sofern er aktuell nicht parkiert.
 
@@ -638,3 +638,22 @@ Die Tests werden mit ExUnit, dem in Elixir integrierten Testframework, durchgef�
   )
 ]
 
+== Empfehlungen
+
+Der vorliegende Prototyp deckt die wesentlichen funktionalen Anforderungen ab und bildet eine solide Grundlage für eine produktive Weiterentwicklung. Die folgenden Punkte stellen die empfohlenen nächsten Schritte dar.
+
+=== Physische Hardware-Integration
+
+Im Prototyp werden Einfahrt und Ausfahrt über die Weboberfläche simuliert. Für den produktiven Betrieb müssten Schranken, Ticketautomaten und Kartenlesegeräte an das System angebunden werden. Die bestehenden Schnittstellen in `GuestParking` und `PermanentParking` sind darauf ausgelegt, durch entsprechende Hardware-Aufrufe ersetzt oder ergänzt zu werden.
+
+=== Anbindung realer externer Dienste
+
+Zahlungssystem und Buchhaltung sind derzeit als Stubs implementiert. Für den Produktiveinsatz müssen `PaymentService` und `AccountingService` gegen reale Dienstleister ausgetauscht werden. Die bestehende Abstraktion über Elixir-Behaviours und die Applikationskonfiguration erlaubt diesen Austausch, ohne die übrige Geschäftslogik zu verändern.
+
+=== Verwaltungsoberfläche für Parkhäuser
+
+Die Konfiguration von Parkhäusern, Stockwerken und Parkplätzen erfolgt derzeit über Datenbankmigrationen. Eine Administrationsoberfläche, über die Betreiber neue Parkhäuser anlegen, Stockwerke definieren und Parkplätze verwalten können, würde den Betrieb erheblich vereinfachen und die Abhängigkeit von technischen Deployments reduzieren.
+
+=== Verbesserung der Benutzeroberfläche
+
+Das aktuelle UI ist funktional, jedoch gestalterisch nicht auf einen produktiven Einsatz ausgelegt. Eine überarbeitete Oberfläche mit konsistentem Design, verbesserter mobiler Darstellung und gezieltem Nutzerfeedback würde die Benutzbarkeit deutlich erhöhen.
