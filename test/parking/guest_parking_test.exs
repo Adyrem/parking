@@ -209,7 +209,8 @@ defmodule Parking.GuestParkingTest do
       level = Repo.insert!(%Level{number: 1, garage_id: garage.id})
       pricing = insert_time_based_pricing(garage.id)
 
-      spots = Enum.map(1..5, fn n -> Repo.insert!(%ParkingSpot{number: n, level_id: level.id}) end)
+      spots =
+        Enum.map(1..5, fn n -> Repo.insert!(%ParkingSpot{number: n, level_id: level.id}) end)
 
       Enum.each(Enum.take(spots, 2), fn spot ->
         Repo.insert!(%Ticket{

@@ -43,8 +43,11 @@ defmodule Parking.PermanentParking do
       active_ticket = active_ticket_for(perm_user)
 
       cond do
-        perm_user.spot == nil -> Repo.rollback(:no_assigned_spot)
-        active_ticket != nil -> Repo.rollback(:already_parked)
+        perm_user.spot == nil ->
+          Repo.rollback(:no_assigned_spot)
+
+        active_ticket != nil ->
+          Repo.rollback(:already_parked)
 
         true ->
           ticket_changeset =
@@ -68,8 +71,11 @@ defmodule Parking.PermanentParking do
       active_ticket = active_ticket_for(perm_user)
 
       cond do
-        perm_user.spot == nil -> Repo.rollback(:no_assigned_spot)
-        active_ticket == nil -> Repo.rollback(:not_parked)
+        perm_user.spot == nil ->
+          Repo.rollback(:no_assigned_spot)
+
+        active_ticket == nil ->
+          Repo.rollback(:not_parked)
 
         true ->
           ticket_changeset =
@@ -85,7 +91,9 @@ defmodule Parking.PermanentParking do
   end
 
   defp active_ticket_for(%PermanentUser{id: id}) do
-    Repo.one(from t in Ticket, where: t.permanent_user_id == ^id and is_nil(t.exit_time), limit: 1)
+    Repo.one(
+      from t in Ticket, where: t.permanent_user_id == ^id and is_nil(t.exit_time), limit: 1
+    )
   end
 
   defp reload_permanent_user(id) do
@@ -266,6 +274,10 @@ defmodule Parking.PermanentParking do
     do: end_of_month(%Date{year: year, month: month + 1, day: 1})
 
   defp end_of_month(%Date{year: year, month: month}) do
-    %Date{year: year, month: month, day: Date.days_in_month(%Date{year: year, month: month, day: 1})}
+    %Date{
+      year: year,
+      month: month,
+      day: Date.days_in_month(%Date{year: year, month: month, day: 1})
+    }
   end
 end

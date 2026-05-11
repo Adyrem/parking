@@ -23,9 +23,9 @@ defmodule Parking.Pricing.TimeBasedPricingTest do
     test "applies time slot rates" do
       strategy = %TimeBasedPricing{
         time_slots: [
-          %{"from" => "06:00", "to" => "18:00", "rate_per_hour" => 3.0},
-          %{"from" => "18:00", "to" => "22:00", "rate_per_hour" => 4.0},
-          %{"from" => "22:00", "to" => "24:00", "rate_per_hour" => 2.0}
+          %{from_time: "06:00", to_time: "18:00", rate_per_hour: 3.0},
+          %{from_time: "18:00", to_time: "22:00", rate_per_hour: 4.0},
+          %{from_time: "22:00", to_time: "24:00", rate_per_hour: 2.0}
         ],
         weekend_time_slots: nil,
         holiday_time_slots: nil,
@@ -44,7 +44,7 @@ defmodule Parking.Pricing.TimeBasedPricingTest do
     test "applies weekend rates" do
       strategy = %TimeBasedPricing{
         time_slots: [],
-        weekend_time_slots: [%{"from" => "00:00", "to" => "24:00", "rate_per_hour" => 4.5}],
+        weekend_time_slots: [%{from_time: "00:00", to_time: "24:00", rate_per_hour: 4.5}],
         holiday_time_slots: nil,
         holidays: [],
         daily_rate: 35.0,
@@ -115,21 +115,21 @@ defmodule Parking.Pricing.TimeBasedPricingTest do
     setup do
       strategy = %TimeBasedPricing{
         time_slots: [
-          %{"from" => "00:00", "to" => "06:00", "rate_per_hour" => 2.50},
-          %{"from" => "06:00", "to" => "09:00", "rate_per_hour" => 2.80},
-          %{"from" => "09:00", "to" => "18:00", "rate_per_hour" => 3.60},
-          %{"from" => "18:00", "to" => "21:00", "rate_per_hour" => 2.80},
-          %{"from" => "21:00", "to" => "24:00", "rate_per_hour" => 2.40}
+          %{from_time: "00:00", to_time: "06:00", rate_per_hour: 2.50},
+          %{from_time: "06:00", to_time: "09:00", rate_per_hour: 2.80},
+          %{from_time: "09:00", to_time: "18:00", rate_per_hour: 3.60},
+          %{from_time: "18:00", to_time: "21:00", rate_per_hour: 2.80},
+          %{from_time: "21:00", to_time: "24:00", rate_per_hour: 2.40}
         ],
         weekend_time_slots: [
-          %{"from" => "00:00", "to" => "09:00", "rate_per_hour" => 2.40},
-          %{"from" => "09:00", "to" => "18:00", "rate_per_hour" => 3.20},
-          %{"from" => "18:00", "to" => "24:00", "rate_per_hour" => 2.40}
+          %{from_time: "00:00", to_time: "09:00", rate_per_hour: 2.40},
+          %{from_time: "09:00", to_time: "18:00", rate_per_hour: 3.20},
+          %{from_time: "18:00", to_time: "24:00", rate_per_hour: 2.40}
         ],
         holiday_time_slots: [
-          %{"from" => "00:00", "to" => "09:00", "rate_per_hour" => 2.40},
-          %{"from" => "09:00", "to" => "18:00", "rate_per_hour" => 3.20},
-          %{"from" => "18:00", "to" => "24:00", "rate_per_hour" => 2.40}
+          %{from_time: "00:00", to_time: "09:00", rate_per_hour: 2.40},
+          %{from_time: "09:00", to_time: "18:00", rate_per_hour: 3.20},
+          %{from_time: "18:00", to_time: "24:00", rate_per_hour: 2.40}
         ],
         holidays: [~D[2026-01-01], ~D[2026-12-25]],
         daily_rate: 35.0,

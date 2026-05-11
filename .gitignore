@@ -44,3 +44,6 @@ sem1_output.txt
 # Assignment PDF (not part of the project source)
 TIA23*.pdf
 
+# Local documentation / notes
+NOTES.md
+

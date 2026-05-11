@@ -78,11 +78,11 @@ defmodule Parking.Pricing.TimeBasedPricing do
   defp rate_for_slot_list(minutes, slots, default_rate) do
     slots
     |> Enum.find_value(default_rate, fn slot ->
-      from = parse_time_slot(slot["from"])
-      to = parse_time_slot(slot["to"])
+      from = parse_time_slot(slot.from_time)
+      to = parse_time_slot(slot.to_time)
 
       if slot_matches?(minutes, from, to) do
-        slot["rate_per_hour"] || default_rate
+        slot.rate_per_hour || default_rate
       else
         false
       end

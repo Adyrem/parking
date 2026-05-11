@@ -18,5 +18,4 @@ defmodule Parking.ParkingSpot do
     |> assoc_constraint(:level)
     |> unique_constraint([:number, :level_id])
   end
-
 end

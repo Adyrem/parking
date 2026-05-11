@@ -39,5 +39,4 @@ defmodule Parking.Ticket do
       changeset
     end
   end
-
 end

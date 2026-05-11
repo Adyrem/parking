@@ -1,5 +1,5 @@
 <Layouts.app flash={@flash}>
-  <div class="space-y-8 p-6">
+  <div class="space-y-8 p-6" id="parking-page" phx-hook=".ParkingHook">
     <%!-- Navigation --%>
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -37,70 +37,70 @@
 
     <%!-- Capacity Bar --%>
     <% rate = @parking_status.occupancy_rate %>
-      <div class={[
-        "rounded-lg p-4 border flex items-center gap-4",
+    <div class={[
+      "rounded-lg p-4 border flex items-center gap-4",
+      cond do
+        rate >= 95 -> "bg-red-950 border-red-700"
+        rate >= 80 -> "bg-yellow-950 border-yellow-700"
+        true -> "bg-gray-800 border-gray-700"
+      end
+    ]}>
+      <span class={[
+        "material-icons text-2xl leading-none",
         cond do
-          rate >= 95 -> "bg-red-950 border-red-700"
-          rate >= 80 -> "bg-yellow-950 border-yellow-700"
-          true -> "bg-gray-800 border-gray-700"
+          rate >= 95 -> "text-red-400"
+          rate >= 80 -> "text-yellow-400"
+          true -> "text-green-400"
         end
       ]}>
-        <span class={[
-          "material-icons text-2xl leading-none",
-          cond do
-            rate >= 95 -> "text-red-400"
-            rate >= 80 -> "text-yellow-400"
-            true -> "text-green-400"
-          end
-        ]}>
-          local_parking
-        </span>
-        <div class="flex-1">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-300 text-sm font-medium">Gästeplätze</span>
-            <div class="flex items-center gap-3">
-              <span class="text-gray-400 text-sm">
-                {@parking_status.available_spots} frei von {@parking_status.total_spots}
-              </span>
-              <span class={[
-                "text-lg font-bold",
-                cond do
-                  rate >= 95 -> "text-red-400"
-                  rate >= 80 -> "text-yellow-400"
-                  true -> "text-green-400"
-                end
-              ]}>
-                {rate}%
-              </span>
-              <%= cond do %>
-                <% rate >= 95 -> %>
-                  <span class="text-xs font-bold text-red-300 bg-red-900 border border-red-700 rounded px-2 py-0.5">
-                    Voll
-                  </span>
-                <% rate >= 80 -> %>
-                  <span class="text-xs font-bold text-yellow-300 bg-yellow-900 border border-yellow-700 rounded px-2 py-0.5">
-                    Fast voll
-                  </span>
-                <% true -> %>
-              <% end %>
-            </div>
+        local_parking
+      </span>
+      <div class="flex-1">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-gray-300 text-sm font-medium">Gästeplätze</span>
+          <div class="flex items-center gap-3">
+            <span class="text-gray-400 text-sm">
+              {@parking_status.available_spots} frei von {@parking_status.total_spots}
+            </span>
+            <span class={[
+              "text-lg font-bold",
+              cond do
+                rate >= 95 -> "text-red-400"
+                rate >= 80 -> "text-yellow-400"
+                true -> "text-green-400"
+              end
+            ]}>
+              {rate}%
+            </span>
+            <%= cond do %>
+              <% rate >= 95 -> %>
+                <span class="text-xs font-bold text-red-300 bg-red-900 border border-red-700 rounded px-2 py-0.5">
+                  Voll
+                </span>
+              <% rate >= 80 -> %>
+                <span class="text-xs font-bold text-yellow-300 bg-yellow-900 border border-yellow-700 rounded px-2 py-0.5">
+                  Fast voll
+                </span>
+              <% true -> %>
+            <% end %>
           </div>
-          <div class="w-full bg-gray-700 rounded-full h-2.5 overflow-hidden">
-            <div
-              class={[
-                "h-full rounded-full transition-all duration-300",
-                cond do
-                  rate >= 95 -> "bg-red-500"
-                  rate >= 80 -> "bg-yellow-500"
-                  true -> "bg-green-500"
-                end
-              ]}
-              style={"width: #{rate}%"}
-            >
-            </div>
+        </div>
+        <div class="w-full bg-gray-700 rounded-full h-2.5 overflow-hidden">
+          <div
+            class={[
+              "h-full rounded-full transition-all duration-300",
+              cond do
+                rate >= 95 -> "bg-red-500"
+                rate >= 80 -> "bg-yellow-500"
+                true -> "bg-green-500"
+              end
+            ]}
+            style={"width: #{rate}%"}
+          >
           </div>
         </div>
       </div>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
       <%!-- Left Panel: Actions --%>
@@ -302,10 +302,11 @@
               </div>
               <div class="sm:col-span-2">
                 <p class="text-gray-400 text-xs uppercase tracking-wider">
-                  Zugewiesener Stellplatz
+                  Zugewiesener Parkplatz
                 </p>
                 <p class="text-gray-100 mt-1">
-                  #{(@authenticated_permanent_user.spot && @authenticated_permanent_user.spot.number) ||
+                  #{(@authenticated_permanent_user.spot &&
+                       @authenticated_permanent_user.spot.number) ||
                     "Keine Zuweisung"}
                 </p>
               </div>
@@ -322,9 +323,19 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <%!-- Ticket ID --%>
                 <div class="border-l-4 border-blue-500 pl-4">
-                  <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                    Ticket ID
-                  </p>
+                  <div class="flex items-center justify-between">
+                    <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                      Ticket ID
+                    </p>
+                    <button
+                      phx-click="copy_uuid"
+                      phx-value-uuid={@ticket.id}
+                      class="text-gray-500 hover:text-gray-300 transition-colors"
+                      title="In Zwischenablage kopieren"
+                    >
+                      <span class="material-icons text-sm leading-none">content_copy</span>
+                    </button>
+                  </div>
                   <p class="text-gray-100 font-mono text-sm mt-1 break-all">
                     {@ticket.id}
                   </p>
@@ -361,7 +372,7 @@
                   <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">
                     Parkplatz
                   </p>
-                  <p class="text-gray-100 text-sm mt-1">Stellplatz #{@ticket.spot.number}</p>
+                  <p class="text-gray-100 text-sm mt-1">Parkplatz #{@ticket.spot.number}</p>
                 </div>
 
                 <%!-- Payment Status --%>
@@ -430,3 +441,17 @@
     </div>
   </div>
 </Layouts.app>
+
+<script :type={Phoenix.LiveView.ColocatedHook} name=".ParkingHook">
+  export default {
+    mounted() {
+      this.handleEvent("copy-to-clipboard", ({uuid}) => {
+        navigator.clipboard.writeText(uuid).then(() => {
+          console.log("UUID copied to clipboard:", uuid);
+        }).catch(err => {
+          console.error("Failed to copy UUID:", err);
+        });
+      });
+    }
+  }
+</script>

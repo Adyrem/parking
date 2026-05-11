@@ -27,47 +27,47 @@
       </div>
     </div>
 
-          <%!-- Occupancy Progress Bar --%>
-      <div class={[
-        "rounded-lg p-6 border",
-        cond do
-          @stats.occupancy_rate >= 95 -> "bg-red-950 border-red-700"
-          @stats.occupancy_rate >= 80 -> "bg-yellow-950 border-yellow-700"
-          true -> "bg-gray-800 border-gray-700"
-        end
-      ]}>
-        <div class="flex items-center justify-between mb-4">
-          <p class="text-gray-400 text-sm font-semibold uppercase">Garagenauslastung</p>
-          <%= cond do %>
-            <% @stats.occupancy_rate >= 95 -> %>
-              <span class="text-xs font-bold text-red-300 bg-red-900 border border-red-700 rounded px-2 py-0.5">
-                Voll
-              </span>
-            <% @stats.occupancy_rate >= 80 -> %>
-              <span class="text-xs font-bold text-yellow-300 bg-yellow-900 border border-yellow-700 rounded px-2 py-0.5">
-                Fast voll
-              </span>
-            <% true -> %>
-          <% end %>
-        </div>
-        <div class="w-full bg-gray-700 rounded-full h-8 overflow-hidden">
-          <div
-            class={[
-              "h-full rounded-full transition-all duration-300",
-              cond do
-                @stats.occupancy_rate >= 95 -> "bg-red-500"
-                @stats.occupancy_rate >= 80 -> "bg-yellow-500"
-                true -> "bg-green-500"
-              end
-            ]}
-            style={"width: #{@stats.occupancy_rate}%"}
-          >
-            <div class="h-full flex items-center justify-center text-white text-sm font-bold">
-              {if @stats.occupancy_rate > 10, do: "#{@stats.occupancy_rate}%"}
-            </div>
+    <%!-- Occupancy Progress Bar --%>
+    <div class={[
+      "rounded-lg p-6 border",
+      cond do
+        @stats.occupancy_rate >= 95 -> "bg-red-950 border-red-700"
+        @stats.occupancy_rate >= 80 -> "bg-yellow-950 border-yellow-700"
+        true -> "bg-gray-800 border-gray-700"
+      end
+    ]}>
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-gray-400 text-sm font-semibold uppercase">Garagenauslastung</p>
+        <%= cond do %>
+          <% @stats.occupancy_rate >= 95 -> %>
+            <span class="text-xs font-bold text-red-300 bg-red-900 border border-red-700 rounded px-2 py-0.5">
+              Voll
+            </span>
+          <% @stats.occupancy_rate >= 80 -> %>
+            <span class="text-xs font-bold text-yellow-300 bg-yellow-900 border border-yellow-700 rounded px-2 py-0.5">
+              Fast voll
+            </span>
+          <% true -> %>
+        <% end %>
+      </div>
+      <div class="w-full bg-gray-700 rounded-full h-8 overflow-hidden">
+        <div
+          class={[
+            "h-full rounded-full transition-all duration-300",
+            cond do
+              @stats.occupancy_rate >= 95 -> "bg-red-500"
+              @stats.occupancy_rate >= 80 -> "bg-yellow-500"
+              true -> "bg-green-500"
+            end
+          ]}
+          style={"width: #{@stats.occupancy_rate}%"}
+        >
+          <div class="h-full flex items-center justify-center text-white text-sm font-bold">
+            {if @stats.occupancy_rate > 10, do: "#{@stats.occupancy_rate}%"}
           </div>
         </div>
       </div>
+    </div>
 
     <%!-- Overall Statistics --%>
     <%= if @stats do %>
@@ -204,7 +204,9 @@
           <%= if @monthly_rent_rate do %>
             <div class="border-t border-gray-700 mt-4 pt-4 flex justify-between text-sm">
               <span class="text-gray-300">Dauermiete (monatlich)</span>
-              <span class="text-sky-400 font-medium">CHF {format_chf(@monthly_rent_rate)}/Monat</span>
+              <span class="text-sky-400 font-medium">
+                CHF {format_chf(@monthly_rent_rate)}/Monat
+              </span>
             </div>
           <% end %>
         </div>
@@ -365,7 +367,7 @@
                         <div class="p-4">
                           <div class="flex items-center justify-between mb-3">
                             <h4 class="text-base font-semibold text-gray-100">
-                              Platz ##{spot.number}
+                              Platz #{spot.number}
                             </h4>
                             <button
                               phx-click={JS.hide(to: "#spot-details-#{spot.id}")}
@@ -380,10 +382,17 @@
                               <span>Status</span>
                               <span class={
                                 cond do
-                                  spot_type == :permanent and active_ticket != nil -> "text-violet-300"
-                                  spot_type == :permanent -> "text-sky-300"
-                                  active_ticket != nil -> "text-red-300"
-                                  true -> "text-emerald-300"
+                                  spot_type == :permanent and active_ticket != nil ->
+                                    "text-violet-300"
+
+                                  spot_type == :permanent ->
+                                    "text-sky-300"
+
+                                  active_ticket != nil ->
+                                    "text-red-300"
+
+                                  true ->
+                                    "text-emerald-300"
                                 end
                               }>
                                 {cond do
@@ -442,9 +451,21 @@
                                 </div>
                               <% end %>
                               <div class="border-t border-gray-700 pt-3">
-                                <p class="text-xs text-gray-500 uppercase tracking-[0.2em] mb-2">
-                                  Ticket ID
-                                </p>
+                                <div class="flex items-center justify-between mb-2">
+                                  <p class="text-xs text-gray-500 uppercase tracking-[0.2em]">
+                                    Ticket ID
+                                  </p>
+                                  <button
+                                    phx-click="copy_uuid"
+                                    phx-value-uuid={active_ticket.id}
+                                    class="text-gray-500 hover:text-gray-300 transition-colors"
+                                    title="In Zwischenablage kopieren"
+                                  >
+                                    <span class="material-icons text-sm leading-none">
+                                      content_copy
+                                    </span>
+                                  </button>
+                                </div>
                                 <p class="text-gray-200 font-mono text-xs break-all">
                                   {active_ticket.id}
                                 </p>

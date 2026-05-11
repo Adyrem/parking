@@ -10,12 +10,24 @@ style: |
     display: block;
     margin: 0 auto;
   }
+  section.code-compare .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5em;
+  }
+  section.code-compare pre {
+    font-size: 0.6em;
+    margin: 0.2em 0;
+  }
+  section.code-compare p strong {
+    font-size: 0.9em;
+  }
 ---
 
 # Parkhaus-Verwaltungssoftware
 ### Semesterarbeit Software Engineering
 
-Adrian Aeschlimann · TEKO Schweizerische Fachschule · Mai 2026
+Adrian Aeschlimann · TEKO Bern · 12.05.2026
 
 ---
 
@@ -50,11 +62,46 @@ Motivation: neue Technologie im Rahmen der Arbeit kennenlernen
 
 ---
 
+<!-- _class: code-compare -->
+
+## Elixir vs. C# - Fehlerbehandlung
+
+<div class="cols">
+<div>
+
+**Elixir** - Pattern Matching
+
+```elixir
+case GuestParking.process_payment(ticket) do
+  {:ok, _}    -> "Bezahlung erfolgreich"
+  {:error, _} -> "Zahlung fehlgeschlagen"
+end
+```
+
+</div>
+<div>
+
+**C#** - Exceptions
+
+```csharp
+try {
+  GuestParking.ProcessPayment(ticket);
+  return "Bezahlung erfolgreich";
+} catch (Exception) {
+  return "Zahlung fehlgeschlagen";
+}
+```
+
+</div>
+</div>
+
+---
+
 <!-- _class: img-slide -->
 
 ## Architektur
 
-<img src="diagrams/Moduluebersicht.png" width="60%">
+<img src="diagrams/Moduluebersicht.png" width="80%">
 
 ---
 
@@ -68,14 +115,12 @@ PricingStrategy (Behaviour)
 
 - Viertelstundenabrechnung (Tarif zu Beginn gilt für ganze Viertelstunde)
 - Separate Slots für Wochenende und Feiertage
-- Ab 24 Stunden → Tagespauschale CHF 35.00
-- Monatsmiete pro Parkhaus konfigurierbar (eigener Tarif-Typ)
+- Ab 24 Stunden: Tagespauschale CHF 35.00
 
 ---
-
 <!-- _class: small-table -->
 
-## Benutzeroberfläche
+<!-- ## Benutzeroberfläche
 
 | Ansicht | Funktion |
 |---|---|
@@ -83,9 +128,9 @@ PricingStrategy (Behaviour)
 | Admin | Dauermieter verwalten, Miete buchen, Sperrstatus |
 | Statistik | Monats-/Jahresumsatz nach Kundenkategorie |
 
-→ Live-Demo
+-> Live-Demo
 
----
+----->
 
 <!-- _class: img-slide -->
 
@@ -112,6 +157,10 @@ PricingStrategy (Behaviour)
 
 ---
 
+## Demo
+
+---
+
 ## Fazit
 
 **Erreicht:**
@@ -127,4 +176,4 @@ PricingStrategy (Behaviour)
 
 ---
 
-## Demo
+## Fragen / Feedback

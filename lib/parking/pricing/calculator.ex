@@ -8,10 +8,10 @@ defmodule Parking.Pricing.Calculator do
   @doc "Calculate fee for a ticket based on its pricing strategy"
   def calculate_fee(ticket) do
     ticket =
-      Repo.preload(ticket, [
+      Repo.preload(ticket,
         pricing: [:time_based_config, :daily_rate_config, :time_slots, :holidays],
         permanent_user: []
-      ])
+      )
 
     if ticket.permanent_user_id do
       0.0
@@ -60,13 +60,7 @@ defmodule Parking.Pricing.Calculator do
   end
 
   defp build_slots(time_slots, slot_type) do
-    result =
-      time_slots
-      |> Enum.filter(&(&1.slot_type == slot_type))
-      |> Enum.map(fn slot ->
-        %{"from" => slot.from_time, "to" => slot.to_time, "rate_per_hour" => slot.rate_per_hour}
-      end)
-
+    result = Enum.filter(time_slots, &(&1.slot_type == slot_type))
     if result == [], do: nil, else: result
   end
 

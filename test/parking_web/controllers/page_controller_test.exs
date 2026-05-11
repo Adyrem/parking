@@ -7,7 +7,11 @@ defmodule ParkingWeb.PageControllerTest do
 
     # Create pricing for the garage
     pricing = Parking.Repo.insert!(%Parking.Pricing{garage_id: garage.id, type: "time_based"})
-    Parking.Repo.insert!(%Parking.Pricing.TimeBasedConfig{pricing_id: pricing.id, rate_per_hour: 3.0})
+
+    Parking.Repo.insert!(%Parking.Pricing.TimeBasedConfig{
+      pricing_id: pricing.id,
+      rate_per_hour: 3.0
+    })
 
     conn = get(conn, ~p"/")
     assert html_response(conn, 200) =~ "Parksystem"

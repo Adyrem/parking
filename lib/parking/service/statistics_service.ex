@@ -60,5 +60,4 @@ defmodule Parking.Services.StatisticsService do
     end_date = Date.new!(year, 12, 31)
     calculate_revenue_by_period(start_date, end_date, garage_id, category)
   end
-
 end

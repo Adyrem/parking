@@ -64,7 +64,9 @@ defmodule Parking.GuestParking do
     )
   end
 
-  defp active_ticket_spot_ids, do: from(t in Ticket, where: is_nil(t.exit_time), select: t.spot_id)
+  defp active_ticket_spot_ids,
+    do: from(t in Ticket, where: is_nil(t.exit_time), select: t.spot_id)
+
   defp perm_reserved_spot_ids, do: from(p in PermanentUser, select: p.spot_id)
 
   @doc "Get the guest parking status excluding permanent reserved spots"

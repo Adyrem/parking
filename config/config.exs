@@ -22,15 +22,6 @@ config :parking, ParkingWeb.Endpoint,
   pubsub_server: Parking.PubSub,
   live_view: [signing_salt: "oDllYNUl"]
 
-# Configure the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
-config :parking, Parking.Mailer, adapter: Swoosh.Adapters.Local
-
 config :parking,
   admin_password: "admin123"
 

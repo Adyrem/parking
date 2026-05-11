@@ -103,5 +103,4 @@ defmodule Parking.Users.PermanentUserTest do
       refute changeset.valid?
     end
   end
-
 end

@@ -79,9 +79,7 @@ defmodule ParkingWeb.ParkingLive do
         case GuestParking.process_payment(ticket) do
           {:ok, paid_ticket} ->
             fee =
-              Repo.one(
-                from p in Payment, where: p.ticket_id == ^paid_ticket.id, select: p.amount
-              )
+              Repo.one(from p in Payment, where: p.ticket_id == ^paid_ticket.id, select: p.amount)
 
             {:noreply,
              assign(socket,
@@ -211,6 +209,10 @@ defmodule ParkingWeb.ParkingLive do
             {:noreply, assign(socket, message: "Fehler: #{error_reason_to_message(reason)}")}
         end
     end
+  end
+
+  def handle_event("copy_uuid", %{"uuid" => uuid}, socket) do
+    {:noreply, push_event(socket, "copy-to-clipboard", %{uuid: uuid})}
   end
 
   def handle_event("logout_user", _, socket) do

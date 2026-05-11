@@ -41,7 +41,11 @@ defmodule ParkingWeb.AdminLive do
       end
 
     {:noreply,
-     assign(socket, garage_id: garage_id, perm_users: perm_users, unassigned_spots: unassigned_spots)}
+     assign(socket,
+       garage_id: garage_id,
+       perm_users: perm_users,
+       unassigned_spots: unassigned_spots
+     )}
   end
 
   def handle_params(_params, _uri, socket), do: {:noreply, socket}
@@ -154,7 +158,8 @@ defmodule ParkingWeb.AdminLive do
   end
 
   def handle_event("assign_spot", %{"user_id" => _user_id, "spot_id" => ""}, socket) do
-    {:noreply, assign(socket, admin_error: "Bitte wählen Sie einen Parkplatz aus", admin_message: nil)}
+    {:noreply,
+     assign(socket, admin_error: "Bitte wählen Sie einen Parkplatz aus", admin_message: nil)}
   end
 
   def handle_event("assign_spot", %{"user_id" => user_id, "spot_id" => spot_id}, socket) do
@@ -180,6 +185,10 @@ defmodule ParkingWeb.AdminLive do
     else
       {:noreply, socket}
     end
+  end
+
+  def handle_event("copy_uuid", %{"uuid" => uuid}, socket) do
+    {:noreply, push_event(socket, "copy-to-clipboard", %{uuid: uuid})}
   end
 
   def handle_event("toggle_block", %{"user_id" => user_id}, socket) do
